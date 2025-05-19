@@ -9,7 +9,6 @@ function [grid] = make_periodic_grid(Lx,Lv,Nx,Nv)
     % Create meshgrid for spatial and velocity coordinates
     [X,V] = meshgrid(x, v);
 
-
     grid.x  = x; grid.v  = v;
     grid.X  = X; grid.V  = V;
     grid.dx = dx;grid.dv = dv;
@@ -17,7 +16,18 @@ function [grid] = make_periodic_grid(Lx,Lv,Nx,Nv)
     grid.Nx = Nx;grid.Nv = Nv;
 
     grid.size = size(X);
-
     grid.dom = [0, -Lv, Lx-dx, Lv-dv];
     
+    % Fourier
+    kx = (2*pi/Lx) * [-Nx/2:Nx/2-1];
+    grid.kx = fftshift(kx);
+    kv = (pi/Lv) * [-Nv/2:Nv/2-1];
+    grid.kv = fftshift(kv);
+
+    % periodic flow velocity
+    [vper,sigma] = velocity_periodicfication(grid);
+    [~,Vperiodic] = meshgrid(x,vper);
+    grid.Vperiodic = Vperiodic;
+    
 end
+

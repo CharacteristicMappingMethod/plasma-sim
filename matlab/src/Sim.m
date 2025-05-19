@@ -66,9 +66,27 @@ function [fs,params] = CMM(params,fs)
 iT = params.it+1;
 dt = params.dt;
 for s = 1:params.Ns
-    [X,V] = sympl_flow_Half(iT,dt,params.grids(s).X,params.grids(s).V,params.charge(s)/params.Mass(s)*params.Efield_list,params.grids(s));
+    [X,V] = sympl_flow_Half(iT,dt,params.grids(s).X,params.grids(s).V,params.charge(s)/params.Mass(s)*params.Efield_list,params.grids(s), "CMM");
+    % 1.) Remapping criteria!
+    % e.g. after mod(iT,100) do remapping
+    if remapping
+        % add mapstack
+        Nmaps = params.Nmaps + 1;
+        params.Map_stack(:,:,1,Nmaps) = X;
+        params.Map_stack(:,:,2,Nmaps) = V;
+        params.Nmaps = Nmaps;
+        Map = compose_maps(params.Map_stack);
+        % reset the list of Efields and the number of Nufi iterations
+        
+
+    end
+
+    % 2.) do the map composition
+    [Xstar,Vstar] = Map(X,V);
+    
+    % 3.) compose with inicond
     fini = params.fini{s};
-    fs(:,:,s) = fini(X,V);
+    fs(:,:,s) = fini(Xstar,Vstar);
 end
 [Efield] =vPoisson(fs,params.grids,params.charge);
 params.Efield = Efield;
@@ -76,6 +94,81 @@ params.Efield_list(:,iT) = Efield;
 
 
 end
+
+function [backward_map] = compose_maps(map_stack)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This function gets a stack of maps which are needed to 
+% be composed.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+for map = map_stack
+    map
+end
+
+backward_map = current_map;
+
+end
+
+% function [fs,params] = predictor_corrector_cmm(params,fs)
+% 
+%     iT = params.it+1;
+% 
+%     % Compute electric field
+%     [Efield] = vPoisson(fs, params.grids, params.charge);
+%     
+%     % Advect distribution functions for half time step
+%     for s = 1:params.Ns
+%         f12(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield, params.grids(s), params.dt / 2);
+%     end
+% 
+%     % Recompute electric field
+%     [Efield] = vPoisson(f12, params.grids, params.charge);
+% 
+%     % Advect distribution functions for full time step
+%     for s = 1:params.Ns
+%         fs(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield, params.grids(s), params.dt);
+%     end
+% 
+%     % save electric field;
+%     params.Efield = Efield;
+%     params.Efield_list(:,iT) = Efield;
+% 
+%     
+% end
+
+
+
+
+function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, method )
+mint="spline";
+if n == 1
+    return;
+end
+
+periodic = @(x) mod(x,grid.Lx-grid.dx);
+
+% this is the periodic continuation of v given in the arxiv paper VP-CMM.
+if method == "CMM"
+    Vperiodic = grid.Vperiodic;
+    Ux = @(X,V) interp2(grid.X, grid.V, Vperiodic, X, V, mint);
+else % its the normal nufi method
+    Ux =@(X,V) V;%interp2(grid.)
+end
+
+Uv = @(X,V,E) reshape(interp1(grid.x,E,reshape(periodic(X),[],1),mint),grid.size);
+
+
+while n > 2
+    n = n - 1;
+    X = X - dt * Ux(X,V);  % Inverse signs; going backwards in time
+    V = V + dt * Uv(X,V,Efield(:,n));
+end
+
+X = X - dt * Ux(X,V);
+V = V + (dt / 2) *Uv(X,V,Efield(:,1));
+
+end
+
 
 
 function plot_results(params, fs)
