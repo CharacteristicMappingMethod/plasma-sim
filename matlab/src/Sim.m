@@ -89,6 +89,20 @@ if mod(iT,1000)==0
         params.Map = compose_maps(params.Map_stack); % TODO
 end
 
+% map1 = @(X,V) cat(3,X-10*V,V);
+% V1 = grid.V;
+% X1 = grid.X - 10*V1;
+
+% map2 = @(X,V) cat(3,X-20*V,V);
+% V2 = grid.V;
+% X2 = grid.X - 20*V2;
+
+% map3 = map1(map2(grid.X,grid.V))
+% V3 = V1 \circ V2
+% X3 = grid.X - 30 * grid.V;
+
+
+
 [Efield] =vPoisson(fs,params.grids,params.charge);
 params.Efield = Efield;
 params.Efield_list(:,N_nufi) = Efield;
