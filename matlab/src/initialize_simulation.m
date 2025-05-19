@@ -15,6 +15,10 @@ end
 for s = 1:params.Ns
     fini = params.fini{s};
     fs(:, :, s) = fini(params.grids(s).X,params.grids(s).V);
+    % Method specific initialization:
+    if params.method == "CMM"
+        params.Map{s} = @(X,V) cat(3,X,V);
+    end
 end
 
 % Maximal Iteration number:
@@ -47,6 +51,8 @@ else
     params.dit_save = params.Nt_max + 2;
     data = [];
 end
+
+
 
 % Directories
 if ~isfield(params, 'data_dir')

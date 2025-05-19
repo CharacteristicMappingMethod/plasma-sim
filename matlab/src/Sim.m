@@ -66,31 +66,32 @@ function [fs,params] = CMM(params,fs)
 iT = params.it+1;
 dt = params.dt;
 for s = 1:params.Ns
-    [X,V] = sympl_flow_Half(iT,dt,params.grids(s).X,params.grids(s).V,params.charge(s)/params.Mass(s)*params.Efield_list,params.grids(s), "CMM");
-    % 1.) Remapping criteria!
-    % e.g. after mod(iT,100) do remapping
-    if remapping
-        % add mapstack
-        Nmaps = params.Nmaps + 1;
-        params.Map_stack(:,:,1,Nmaps) = X;
-        params.Map_stack(:,:,2,Nmaps) = V;
-        params.Nmaps = Nmaps;
-        Map = compose_maps(params.Map_stack);
-        % reset the list of Efields and the number of Nufi iterations
-        
-
-    end
-
-    % 2.) do the map composition
-    [Xstar,Vstar] = Map(X,V);
-    
-    % 3.) compose with inicond
+    N_nufi = mod(iT,1000);
+    [X,V] = sympl_flow_Half(N_nufi,dt,params.grids(s).X,params.grids(s).V,params.charge(s)/params.Mass(s)*params.Efield_list,params.grids(s), "CMM");
+    % 1.) do the map composition
+    Map_values = params.Map{s}(X,V);
+    Xstar = Map_values(:,:,1);
+    Vstar = Map_values(:,:,2);
+    % 2.) compose with inicond
     fini = params.fini{s};
     fs(:,:,s) = fini(Xstar,Vstar);
 end
+
+% 3.) Remapping ?
+% e.g. after mod(iT,100) do remapping
+if mod(iT,1000)==0
+        % add mapstack
+        Nmaps = params.Nmaps + 1;
+        params.Map_stack(:,:,1,s,Nmaps) = X;
+        params.Map_stack(:,:,2,s,Nmaps) = V;
+        params.Nmaps = Nmaps;
+
+        params.Map = compose_maps(params.Map_stack); % TODO
+end
+
 [Efield] =vPoisson(fs,params.grids,params.charge);
 params.Efield = Efield;
-params.Efield_list(:,iT) = Efield;
+params.Efield_list(:,N_nufi) = Efield;
 
 
 end
