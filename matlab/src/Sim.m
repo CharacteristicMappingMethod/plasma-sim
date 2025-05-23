@@ -92,6 +92,9 @@ end
 % map1 = @(X,V) cat(3,X-10*V,V);
 % V1 = grid.V;
 % X1 = grid.X - 10*V1;
+% Vmap = @(X,V) interp2(grid.X,grid.V,V1,X,V,mint)
+% Xmap = @(X,V) interp2(grid.X,grid.V,X1,X,V,mint)
+
 
 % map2 = @(X,V) cat(3,X-20*V,V);
 % V2 = grid.V;
