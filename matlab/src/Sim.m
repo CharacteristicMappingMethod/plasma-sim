@@ -49,6 +49,8 @@ function [fs, params] = step(params, fs)
 
     if params.method == "predcorr"
         [fs,params] = predictor_corrector(params,fs);
+    elseif params.method == "predcorr-hybrid"
+        [fs,params] = predictor_corrector_hybrid(params,fs);
     elseif params.method == "predcorr_multi"
         [fs,params] = predictor_corrector_subcycling_electrons(params,fs);
     elseif params.method == "NuFi"
@@ -120,7 +122,7 @@ function [backward_map] = compose_maps(map_stack)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 for map = map_stack
-    map
+    %map
 end
 
 backward_map = current_map;
