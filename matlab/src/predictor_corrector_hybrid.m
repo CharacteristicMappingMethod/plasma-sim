@@ -1,5 +1,5 @@
 function [fs,params] = predictor_corrector_hybrid(params,fs)
-
+dt = params.dt;
 s_elec = find(params.species_name=="electrons");
 s_ion =  find(params.species_name=="ions");
 
@@ -15,7 +15,7 @@ iT = params.it+1;
 
 % Compute electric field
 rho = n_ions + n_elec;
-[Efield,phi] = Poisson(rho, params.grids);
+[Efield,phi_old] = Poisson(rho, params.grids);
 
 %% advect ions
 f12(:, :, s_ion) = Advect(fs(:, :, s_ion), params.charge(s_ion) / params.Mass(s_ion) * Efield, params.grids(s_ion), params.dt / 2);
@@ -36,10 +36,28 @@ v = params.grids(s_elec).v;
 [Phi,V] = meshgrid(phi,v);
 n_elec_fluid = (1+params.pert(X)) .*exp(charge(s_elec)*Phi/T_e);
 
+f_elec_fluid = params.fe0(X,V).*exp(charge(s_elec)*Phi/T_e);
+
+% kinetic part
+dg = fs(:,:,s_elec) -0* f_elec_fluid;
+dg = dg + 0*0.5 * dt * source_term(params,dg,params.fe0(X,V), phi, phi_old, -Efield);
+% left hand side:
+dg = Advect(dg, params.charge(s_elec) / params.Mass(s_elec) * Efield, params.grids(s_elec), params.dt);
+% right hand side:
+fhalf = f_elec_fluid + dg;
+n_ions = charge(s_ion)*sum(fs(:,:,s_ion))*params.grids(s_ion).dv;
+n_elec = charge(s_elec)*sum(fhalf)*params.grids(s_elec).dv;
+rho = n_ions + n_elec;
+
+%[Efield,phi] = Poisson(rho, params.grids);
+[Phi,V] = meshgrid(phi,v);
+f_elec_fluid = params.fe0(X,V).*exp(charge(s_elec)*Phi/T_e);
+
+dg = Advect(dg, params.charge(s_elec) / params.Mass(s_elec) * Efield, params.grids(s_elec), params.dt);
+dg = dg + 1 * dt * source_term(params,dg, params.fe0(X,V), phi, phi_old, -Efield);
+
 %n_elec_kinetic =
-
-fs(:,:,s_elec) = params.fe0(X,V).*exp(charge(s_elec)*Phi/T_e);
-
+fs(:,:,s_elec) = f_elec_fluid + dg;
 
 %% update e field
 % save electric field;
@@ -74,4 +92,14 @@ phi_fft(1) = 0; % set mean to zero
 dphi_dx_h = 1i*phi_fft.*kx;
 Efield = -reshape(ifft(dphi_dx_h, "symmetric"), 1, []);
 phi = reshape(ifft(phi_fft, "symmetric"), 1, []);
+end
+
+function S = source_term(params,dg, fe0, phi, phi_old, dphi_dx)
+    % Approximate d(phi)/dt
+    dphi_dt = (phi - phi_old) / params.dt;
+
+    
+
+    % Source term
+    S = -fe0 .* (dphi_dt + params.grids(1).V .* dphi_dx);
 end
