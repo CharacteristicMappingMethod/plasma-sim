@@ -18,7 +18,8 @@ end
 
 
 function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid)
-mint="spline";
+mint="lagrange";
+order = 4; % lagrange interpolation order
 if n == 1
     return;
 end
@@ -29,11 +30,20 @@ periodic = @(x) mod(x,grid.Lx-grid.dx);
 while n > 2
     n = n - 1;
     X = X - dt * V;  % Inverse signs; going backwards in time
-    V = V + dt *reshape(interp1(grid.x,Efield(:,n),reshape(periodic(X),[],1),mint),grid.size);
+    if mint=="lagrange"
+        V = V + dt *reshape(lagrange_local_interp_periodic(reshape(X,[],1),grid.x,Efield(:,n),order),grid.size);
+    else
+        V = V + dt *reshape(interp1(grid.x,Efield(:,n),reshape(periodic(X),[],1),mint),grid.size);
+    end
+
 end
 
 X = X - dt * V;
-V = V + (dt / 2) *reshape(interp1(grid.x,Efield(:,1),reshape(periodic(X),[],1),mint),grid.size);
+if mint=="lagrange"
+    V = V + (dt / 2) *reshape(lagrange_local_interp_periodic(reshape(X,[],1),grid.x,Efield(:,1),order),grid.size);
+else
+    V = V + (dt / 2) *reshape(interp1(grid.x,Efield(:,1),reshape(periodic(X),[],1),mint),grid.size);
+end
 
 end
 
