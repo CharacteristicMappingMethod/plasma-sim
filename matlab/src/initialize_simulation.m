@@ -18,12 +18,13 @@ for s = 1:params.Ns
     % Method specific initialization:
     if params.method == "CMM"
         params.Map{s} = @(X,V) cat(3,X,V);
+        params.Nmaps=0;
     end
 end
 
 % Maximal Iteration number:
 % check if maximal time iteration number Nt_max fits final time Tend
-% this is necessary since size of the preallocated arrays may depend on
+% this is necessary since size of t = 0he preallocated arrays may depend on
 % Nt_max.
 if params.Nt_max> params.Tend/params.dt
     params.Nt_max = ceil(params.Tend/params.dt);
