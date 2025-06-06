@@ -14,7 +14,7 @@ PARAMS_ion_acoustic_waves;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% simulate
 tic()
-%params.method = "CMM";
+%params.method = "NuFi";
 [params1, data] = Sim(params);
 t(1) = toc()
 
@@ -35,3 +35,4 @@ h = plot_qty_vs_time(params1,"Epot");
 hold on
 h = plot_qty_vs_time(params2,"Epot");
 h.Color="r"
+legend(params1.method,params2.method)
