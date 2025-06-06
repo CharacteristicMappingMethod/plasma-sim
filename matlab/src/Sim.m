@@ -95,6 +95,7 @@ function [params,data] = Sim(params)
             fini = params.fini{s};
             fs(:,:,s) = fini(Xstar,Vstar);
             [Efield] =vPoisson(fs,params.grids,params.charge);
+            params.Efield_list(:,1) = Efield;
         end
     end
     
