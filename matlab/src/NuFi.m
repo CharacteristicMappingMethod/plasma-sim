@@ -18,7 +18,7 @@ end
 
 
 function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid)
-mint="lagrange";
+mint="spline";
 order = 4; % lagrange interpolation order
 if n == 1
     return;

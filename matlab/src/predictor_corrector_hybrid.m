@@ -30,34 +30,35 @@ fs(:, :, s_ion) = Advect(fs(:, :, s_ion), params.charge(s_ion) / params.Mass(s_i
 
 %% advect electrons
 % fluid part:
-T_e = 1;
+
+T_e = 10;
 X = params.grids(s_elec).X;
 v = params.grids(s_elec).v;
 [Phi,V] = meshgrid(phi,v);
-n_elec_fluid = (1+params.pert(X)) .*exp(charge(s_elec)*Phi/T_e);
+n_elec_fluid = (1) .*exp(charge(s_elec)*Phi/T_e);
 
-f_elec_fluid = params.fe0(X,V).*exp(charge(s_elec)*Phi/T_e);
+f_elec_fluid =@(X,V,Phi_field) params.fe0(X,V).*exp(charge(s_elec)*Phi_field/T_e);
 
 % kinetic part
-dg = fs(:,:,s_elec) -0* f_elec_fluid;
-dg = dg + 0*0.5 * dt * source_term(params,dg,params.fe0(X,V), phi, phi_old, -Efield);
+dg = fs(:,:,s_elec) - f_elec_fluid(X,V,Phi);
+dg = dg + 0.5 * dt * source_term(params,dg,charge(s_elec)*f_elec_fluid(X,V,Phi)/T_e, phi, phi_old, -Efield);
 % left hand side:
 dg = Advect(dg, params.charge(s_elec) / params.Mass(s_elec) * Efield, params.grids(s_elec), params.dt);
 % right hand side:
-fhalf = f_elec_fluid + dg;
+fhalf =  f_elec_fluid(X,V,Phi)+ dg;
 n_ions = charge(s_ion)*sum(fs(:,:,s_ion))*params.grids(s_ion).dv;
 n_elec = charge(s_elec)*sum(fhalf)*params.grids(s_elec).dv;
 rho = n_ions + n_elec;
 
-%[Efield,phi] = Poisson(rho, params.grids);
+[Efield,phi] = Poisson(rho, params.grids);
 [Phi,V] = meshgrid(phi,v);
-f_elec_fluid = params.fe0(X,V).*exp(charge(s_elec)*Phi/T_e);
+
 
 dg = Advect(dg, params.charge(s_elec) / params.Mass(s_elec) * Efield, params.grids(s_elec), params.dt);
-dg = dg + 1 * dt * source_term(params,dg, params.fe0(X,V), phi, phi_old, -Efield);
+dg = dg + 0.5 * dt * source_term(params,dg,charge(s_elec)*  f_elec_fluid(X,V,Phi)/T_e, phi, phi_old, -Efield);
 
 %n_elec_kinetic =
-fs(:,:,s_elec) = f_elec_fluid + dg;
+fs(:,:,s_elec) = f_elec_fluid(X,V,Phi) + dg;
 
 %% update e field
 % save electric field;
@@ -77,7 +78,7 @@ kx = fftshift(kx);
 
 % laplacian is division -|k|^2
 K2 = kx.^2;
-K2(1) = 1; % avoid devision by 0
+K2(1) = 1; % avoid devision by 0params.fe0(X,V)
 % to avoid a division by zero, we set the zeroth wavenumber to one.
 % this leaves it's respective Fourier coefficient unaltered, so the
 % zero mode of Sk is conserved.dphi_dx_h = 1i*phi_fft.*kx(1,:); This way, Sk's zero mode implicitly
