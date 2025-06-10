@@ -3,7 +3,7 @@ params = struct();
 
 %% General Simulation Parameters
 params.mycase       = "landau_damping";   % Options: "landau_damping", "two_stream"
-params.method       = "predcorr";         % Time integration method
+params.method       = "CMM";         % Time integration method predcorr
 params.Nt_max       = 4000;               % Max number of time steps
 params.dt           = 0.5;                % Time step size
 params.Tend         = 80;                 % Simulation end time

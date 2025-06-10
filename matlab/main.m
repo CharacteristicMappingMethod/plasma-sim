@@ -8,9 +8,9 @@ addpath(genpath('./src/'),genpath('./params/'))
 DEFAULTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% select case:
-%PARAMS_two_stream;
+PARAMS_two_stream;
 %PARAMS_landau_damping;
-PARAMS_ion_acoustic_waves;
+%PARAMS_ion_acoustic_waves;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% simulate
 tic()

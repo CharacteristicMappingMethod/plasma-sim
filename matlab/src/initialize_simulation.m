@@ -17,7 +17,11 @@ for s = 1:params.Ns
     fs(:, :, s) = fini(params.grids(s).X,params.grids(s).V);
     % Method specific initialization:
     if params.method == "CMM"
-        params.Map{s} = @(X,V) cat(3,X,V);
+       
+        params.Nmaps=0;
+   
+        params.Map_stack(:,:,:,s,:) = zeros(params.grids(s).size(1), params.grids(s).size(2), params.Ns, 1); 
+    
     end
 end
 
