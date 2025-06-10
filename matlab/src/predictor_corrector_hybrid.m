@@ -1,64 +1,81 @@
 function [fs,params] = predictor_corrector_hybrid(params,fs)
+% Time step
 dt = params.dt;
-s_elec = find(params.species_name=="electrons");
-s_ion =  find(params.species_name=="ions");
+iT = params.it + 1;
 
+% Species indices
+s_elec = find(params.species_name == "electrons");
+s_ion  = find(params.species_name == "ions");
+
+% Grid and physical parameters
 charge = params.charge;
+mass   = params.Mass;
+grids  = params.grids;
+T_e    = 100;  % Electron temperature (assumed constant)
 
-% ion density
-n_ions = charge(s_ion)*sum(fs(:,:,s_ion))*params.grids(s_ion).dv;
+% Spatial and velocity grids for electrons
+X = grids(s_elec).X;
+v = grids(s_elec).v;
 
-% electron density
-n_elec = charge(s_elec)*sum(fs(:,:,s_elec))*params.grids(s_elec).dv;
+%% --- Step 1: Compute initial charge density and electric field ---
+% Ion density (charge-weighted)
+n_ions = charge(s_ion) * sum(fs(:,:,s_ion), 2) * grids(s_ion).dv;
 
-iT = params.it+1;
+% Electron density (charge-weighted)
+n_elec = charge(s_elec) * sum(fs(:,:,s_elec), 2) * grids(s_elec).dv;
 
-% Compute electric field
-rho = n_ions + n_elec;
-[Efield,phi_old] = Poisson(rho, params.grids);
-
-%% advect ions
-f12(:, :, s_ion) = Advect(fs(:, :, s_ion), params.charge(s_ion) / params.Mass(s_ion) * Efield, params.grids(s_ion), params.dt / 2);
-
-% Recompute electric field
-n_ions = charge(s_ion)*sum(fs(:,:,s_ion))*params.grids(s_ion).dv;
-rho = n_ions + n_elec;
-[Efield,phi] = Poisson(rho, params.grids);
-
-% Advect distribution functions for full time step
-fs(:, :, s_ion) = Advect(fs(:, :, s_ion), params.charge(s_ion) / params.Mass(s_ion) * Efield, params.grids(s_ion), params.dt);
-
-%% advect electrons
-% fluid part:
-
-T_e = 10;
-X = params.grids(s_elec).X;
-v = params.grids(s_elec).v;
-[Phi,V] = meshgrid(phi,v);
-n_elec_fluid = (1) .*exp(charge(s_elec)*Phi/T_e);
-
-f_elec_fluid =@(X,V,Phi_field) params.fe0(X,V).*exp(charge(s_elec)*Phi_field/T_e);
-
-% kinetic part
-dg = fs(:,:,s_elec) - f_elec_fluid(X,V,Phi);
-dg = dg + 0.5 * dt * source_term(params,dg,charge(s_elec)*f_elec_fluid(X,V,Phi)/T_e, phi, phi_old, -Efield);
-% left hand side:
-dg = Advect(dg, params.charge(s_elec) / params.Mass(s_elec) * Efield, params.grids(s_elec), params.dt);
-% right hand side:
-fhalf =  f_elec_fluid(X,V,Phi)+ dg;
-n_ions = charge(s_ion)*sum(fs(:,:,s_ion))*params.grids(s_ion).dv;
-n_elec = charge(s_elec)*sum(fhalf)*params.grids(s_elec).dv;
+% Total charge density
 rho = n_ions + n_elec;
 
-[Efield,phi] = Poisson(rho, params.grids);
-[Phi,V] = meshgrid(phi,v);
+% Solve Poisson equation to get E and φ at t^n
+[Efield, phi_old] = Poisson(rho, grids);
 
+%% --- Step 2: Advect ions (first half step) ---
+accel_ion = charge(s_ion) / mass(s_ion) * Efield;
+f12(:,:,s_ion) = Advect(fs(:,:,s_ion), accel_ion, grids(s_ion), dt/2);
 
-dg = Advect(dg, params.charge(s_elec) / params.Mass(s_elec) * Efield, params.grids(s_elec), params.dt);
-dg = dg + 0.5 * dt * source_term(params,dg,charge(s_elec)*  f_elec_fluid(X,V,Phi)/T_e, phi, phi_old, -Efield);
+%% --- Step 3: Recompute E field after half-step ion push ---
+n_ions = charge(s_ion) * sum(f12(:,:,s_ion), 2) * grids(s_ion).dv;
+rho = n_ions + n_elec;
+[Efield, phi] = Poisson(rho, grids);
 
-%n_elec_kinetic =
-fs(:,:,s_elec) = f_elec_fluid(X,V,Phi) + dg;
+%% --- Step 4: Advect ions full step with updated E field ---
+fs(:,:,s_ion) = Advect(fs(:,:,s_ion), charge(s_ion)/mass(s_ion)*Efield, grids(s_ion), dt);
+
+%% --- Step 5: Electron fluid–kinetic update ---
+% Electron fluid density from Boltzmann response
+[Phi, V] = meshgrid(phi, v);
+n0 = 1;  % Reference density (can be computed from initial conditions)
+f_elec_fluid = @(X, V, Phi_field) params.fe0(X, V) .* exp(charge(s_elec) * Phi_field / T_e);
+
+% Compute kinetic part: δg = f - f_fluid
+f_fluid = f_elec_fluid(X, V, Phi);
+dg = fs(:,:,s_elec) - f_fluid;
+
+% First half source step
+S_half_1 = source_term(params, dg, charge(s_elec) * f_fluid / T_e, phi, phi_old, -Efield);
+dg = dg + 0.5 * dt * S_half_1;
+
+% Advection step (semi-Lagrangian)
+accel_elec = charge(s_elec) / mass(s_elec) * Efield;
+dg = Advect(dg, accel_elec, grids(s_elec), dt);
+
+% Recompute φ and E for next half source step
+f_half = f_elec_fluid(X, V, Phi) + dg;
+n_elec = charge(s_elec) * sum(f_half, 2) * grids(s_elec).dv;
+n_ions = charge(s_ion)  * sum(fs(:,:,s_ion), 2) * grids(s_ion).dv;
+rho = n_ions + n_elec;
+
+[Efield, phi] = Poisson(rho, grids);
+[Phi, V] = meshgrid(phi, v);  % Update meshgrid
+
+% Second half source step
+f_fluid = f_elec_fluid(X, V, Phi);  % Update f_fluid with new φ
+S_half_2 = source_term(params, dg, charge(s_elec) * f_fluid / T_e, phi, phi_old, -Efield);
+dg = dg + 0.5 * dt * S_half_2;
+
+% Final electron distribution: fluid + kinetic
+fs(:,:,s_elec) = f_fluid + dg;
 
 %% update e field
 % save electric field;

@@ -51,6 +51,8 @@ function [params,data] = Sim(params)
             [fs,params] = predictor_corrector(params,fs);
         elseif params.method == "predcorr_multi"
             [fs,params] = predictor_corrector_subcycling_electrons(params,fs);
+        elseif params.method == "predcorr_hybrid"
+            [fs,params] = predictor_corrector_hybrid(params,fs);
         elseif params.method == "NuFi"
             [fs,params] = NuFi(params,fs);
         elseif params.method == "CMM"

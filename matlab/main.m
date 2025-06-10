@@ -9,8 +9,8 @@ DEFAULTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% select case:
 %PARAMS_two_stream;
-PARAMS_landau_damping;
-%PARAMS_ion_acoustic_waves;
+%PARAMS_landau_damping;
+PARAMS_ion_acoustic_waves;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% simulate
 tic()
@@ -35,4 +35,5 @@ h = plot_qty_vs_time(params1,"Epot");
 hold on
 h = plot_qty_vs_time(params2,"Epot");
 h.Color="r"
+h.LineStyle="--"
 legend(params1.method,params2.method)
