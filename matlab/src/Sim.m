@@ -67,10 +67,10 @@ function [params,data] = Sim(params)
     function [fs,params] = CMM(params,fs)
     iT = params.it+1;
     dt = params.dt;
-   
+   Nremap = 1000000;
     for s = 1:params.Ns
     
-        N_nufi = mod(iT-1,10) + 1;   % This ensures N_nufi is always between 1 and 10
+        N_nufi = mod(iT-1,Nremap) + 1;   % This ensures N_nufi is always between 1 and 10
         if N_nufi ==1
             N_nufi = N_nufi+1;
         end  
@@ -80,7 +80,7 @@ function [params,data] = Sim(params)
     
     % 3.) Remapping ?
     % e.g. after mod(iT,10) do remapping
-        if mod(iT,10)==0
+        if mod(iT,Nremap)==0
             % add mapstack
             Nmaps = params.Nmaps + 1;
             params.Map_stack(:,:,1,s,Nmaps) = X;
@@ -138,44 +138,42 @@ params.Efield_list(:,N_nufi) = Efield;
     % end
     
     
-    
-    
-    function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, method )
-    mint="spline";
-    if n == 1
-        return;
+function [X,V] = sympl_flow_Half(n, dt, X,V, Efield, grid,method)
+mint="spline";
+order = 4;
+if n == 1
+    return;
+end
+
+periodic = @(x) mod(x,grid.Lx-grid.dx);
+
+% this is the periodic continuation of v given in the arxiv paper VP-CMM.
+if method == "CMM"
+    Vperiodic = grid.Vperiodic;
+    Ux = @(X,V) interp2(grid.X, grid.V, Vperiodic, X, V, mint); % TODO: check if this is correct, because V is not periodic
+else % its the normal nufi method
+    Ux =@(X,V) V;%interp2(grid.)
+end
+
+    if mint=="lagrange"
+        % currently doesnt work??
+        Uv = @(X,V,E) -reshape(lagrange_local_interp_periodic(reshape(X,[],1),grid.x,E(:),order),grid.size);
+    else
+        Uv = @(X,V,E) -reshape(interp1(grid.x,E,reshape(periodic(X),[],1),mint),grid.size);
     end
+
+
+while n > 2
+    n = n - 1;
+    X = X - dt * Ux(X,V);  % Inverse signs; going backwards in time
+    V = V - dt *Uv(X,V,Efield(:,n));
+end
+
+X = X - dt * Ux(X,V);
+V = V - (dt / 2) *Uv(X,V,Efield(:,1));
+
+end
     
-    periodic = @(x) mod(x,grid.Lx-grid.dx);
-    
-    % this is the periodic continuation of v given in the arxiv paper VP-CMM.
-    if method == "CMM"
-        Vperiodic = grid.Vperiodic;
-        Ux = @(X,V) interp2(grid.X, grid.V, Vperiodic, X, V, mint); % TODO: check if this is correct, because V is not periodic 
-    else % its the normal nufi method
-        Ux =@(X,V) V;%interp2(grid.)
-    end
-    
-    Uv = @(X,V,E) reshape(interp1(grid.x,E,reshape(periodic(X),[],1),mint),grid.size);
-    
-    % For CMM method, we need to go backwards in time using the stored fields
-    field_index = 1;
-    while n > 2
-        n = n - 1;
-        field_index = field_index + 1;
-        X = X - dt * Ux(X,V);  % Inverse signs; going backwards in time
-        if field_index <= size(Efield, 2)
-            V = V + dt * Uv(X,V,Efield(:,field_index));
-        else
-            % If we don't have enough history, use the last available field
-            V = V + dt * Uv(X,V,Efield(:,end));
-        end
-    end
-    
-    X = X - dt * Ux(X,V);
-    V = V + (dt / 2) * Uv(X,V,Efield(:,1));
-    
-    end
     
     
     

@@ -3,7 +3,7 @@ params.mycase = "ion_accoustic_waves_weak";          % "two_stream"
 params.Nx = 2^8;                            % Number of spatial grid points
 params.Nv = 2^8;                            % Number of velocity grid points
 params.Ns = 2;                              % Number of species (electrons and ions)
-params.method="predcorr-hybrid"%"predcorr-hybrid";
+params.method="predcorr_hybrid"%"predcorr-hybrid";
 params.species_name = ["electrons","ions"]; % name of the different species
 params.Mr = 1000;                           % Mass ratio for ions
 params.Mass = [1, params.Mr];               % Mass of species
@@ -20,7 +20,7 @@ params.alpha = 0.5;                         % Perturbation amplitude
 params.pert = @(x) params.alpha * cos(params.k * x); % Perturbation function
 
 % Electrons
-params.Ue = -2;                   % Electron drift velocity
+params.Ue = -0;                   % Electron drift velocity
 params.fe0 = @(x, v) (1+0*params.pert(x)) ./ (sqrt(2 * pi)) .* (exp(-(v - params.Ue).^2 / 2)); % Electron distribution
 params.fi0 = @(x, v)  (1+params.pert(x)) .*sqrt(params.Mr / (2 * pi)) .* (exp(-params.Mr * (v).^2 / 2)); % Ion distribution
 params.fini = {params.fe0,params.fi0};
