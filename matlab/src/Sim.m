@@ -139,7 +139,7 @@ params.Efield_list(:,N_nufi) = Efield;
     
     
 function [X,V] = sympl_flow_Half(n, dt, X,V, Efield, grid,method)
-mint="spline";
+mint="lagrange";
 order = 4;
 if n == 1
     return;
@@ -150,7 +150,11 @@ periodic = @(x) mod(x,grid.Lx-grid.dx);
 % this is the periodic continuation of v given in the arxiv paper VP-CMM.
 if method == "CMM"
     Vperiodic = grid.Vperiodic;
-    Ux = @(X,V) interp2(grid.X, grid.V, Vperiodic, X, V, mint); % TODO: check if this is correct, because V is not periodic
+    if mint=="lagrange"
+    Ux = @(X,V) reshape(lagrange2d_local_interp_periodic(X, V, grid.x, grid.v, Vperiodic, order),grid.size);
+    else
+    Ux = @(X,V) interp2(grid.X, grid.V, Vperiodic, X, V, mint); 
+    end
 else % its the normal nufi method
     Ux =@(X,V) V;%interp2(grid.)
 end
