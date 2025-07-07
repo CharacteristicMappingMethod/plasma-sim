@@ -6,7 +6,7 @@ params.mycase       = "landau_damping";   % Options: "landau_damping", "two_stre
 params.method       = "predcorr";         % Time integration method
 params.Nt_max       = 4000;               % Max number of time steps
 params.dt           = 0.5;                % Time step size
-params.Tend         = 80;                 % Simulation end time
+params.Tend         = 60;                 % Simulation end time
 params.dt_save      = 10;                 % Save data every dt_save time units
 
 %% Grid Parameters

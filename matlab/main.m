@@ -8,8 +8,8 @@ addpath(genpath('./src/'),genpath('./params/'))
 DEFAULTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% select case:
-PARAMS_two_stream;
-%PARAMS_landau_damping;
+%PARAMS_two_stream;
+PARAMS_landau_damping;
 %PARAMS_ion_acoustic_waves;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% simulate
@@ -19,7 +19,7 @@ params.method = "CMM";
 t(1) = toc()
 
 tic()
-params.method = "predcorr";
+params.method = "NuFi";
 [params2, data] = Sim(params);
 t(2) = toc()
 

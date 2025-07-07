@@ -1,7 +1,8 @@
 function [grid] = make_periodic_grid(Lx,Lv,Nx,Nv)
 
     x = [0:Nx-1] * Lx / Nx; % Spatial grid
-    v = linspace(-Lv,Lv,Nv);
+    v = [0:Nv-1] * 2*Lv / Nv-Lv; % Spatial grid
+    %v = linspace(-Lv,Lv,Nv);
 
     dx = x(2) - x(1); % Spatial grid spacing
     dv = v(2) - v(1); % Velocity grid spacing

@@ -67,7 +67,7 @@ function [params,data] = Sim(params)
     function [fs,params] = CMM(params,fs)
     iT = params.it+1;
     dt = params.dt;
-   Nremap = 1000000;
+   Nremap = 100000;
     for s = 1:params.Ns
     
         N_nufi = mod(iT-1,Nremap) + 1;   % This ensures N_nufi is always between 1 and 10
@@ -109,38 +109,11 @@ params.Efield_list(:,N_nufi) = Efield;
     end
     
     
-    
-    % function [fs,params] = predictor_corrector_cmm(params,fs)
-    % 
-    %     iT = params.it+1;
-    % 
-    %     % Compute electric field
-    %     [Efield] = vPoisson(fs, params.grids, params.charge);
-    %     
-    %     % Advect distribution functions for half time step
-    %     for s = 1:params.Ns
-    %         f12(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield, params.grids(s), params.dt / 2);
-    %     end
-    % 
-    %     % Recompute electric field
-    %     [Efield] = vPoisson(f12, params.grids, params.charge);
-    % 
-    %     % Advect distribution functions for full time step
-    %     for s = 1:params.Ns
-    %         fs(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield, params.grids(s), params.dt);
-    %     end
-    % 
-    %     % save electric field;
-    %     params.Efield = Efield;
-    %     params.Efield_list(:,iT) = Efield;
-    % 
-    %     
-    % end
-    
+
     
 function [X,V] = sympl_flow_Half(n, dt, X,V, Efield, grid,method)
 mint="lagrange";
-order = 4;
+order = 3;
 if n == 1
     return;
 end
@@ -151,9 +124,11 @@ periodic = @(x) mod(x,grid.Lx-grid.dx);
 if method == "CMM"
     Vperiodic = grid.Vperiodic;
     if mint=="lagrange"
-    Ux = @(X,V) reshape(lagrange2d_local_interp_periodic(X, V, grid.x, grid.v, Vperiodic, order),grid.size);
+        %%% attention grid values for the langrange interpolation should be
+        %%% always between [0,L-dx] not negative!
+    Ux = @(X,V) reshape(lagrange2d_local_interp_periodic(X, V+grid.Lv, grid.x, grid.v+grid.Lv, Vperiodic, order),grid.size);
     else
-    Ux = @(X,V) interp2(grid.X, grid.V, Vperiodic, X, V, mint); 
+    Ux = @(X,V) interp2(grid.X, grid.V, Vperiodic, periodic(X), V, mint); 
     end
 else % its the normal nufi method
     Ux =@(X,V) V;%interp2(grid.)
@@ -161,7 +136,7 @@ end
 
     if mint=="lagrange"
         % currently doesnt work??
-        Uv = @(X,V,E) -reshape(lagrange_local_interp_periodic(reshape(X,[],1),grid.x,E(:),order),grid.size);
+        Uv = @(X,V,E) -reshape(lagrange1d_local_interp_periodic(reshape(X,[],1),grid.x,E(:),order),grid.size);
     else
         Uv = @(X,V,E) -reshape(interp1(grid.x,E,reshape(periodic(X),[],1),mint),grid.size);
     end
