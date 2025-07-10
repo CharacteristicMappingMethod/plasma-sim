@@ -64,50 +64,49 @@ function [params,data] = Sim(params)
     
     end
     
-    function [fs,params] = CMM(params,fs)
-    iT = params.it+1;
-    dt = params.dt;
-   Nremap = 100000;
-    for s = 1:params.Ns
-    
-        N_nufi = mod(iT-1,Nremap) + 1;   % This ensures N_nufi is always between 1 and 10
-        if N_nufi ==1
-            N_nufi = N_nufi+1;
-        end  
-        [X,V] = sympl_flow_Half(N_nufi,dt,params.grids(s).X,params.grids(s).V,params.charge(s)/params.Mass(s)*params.Efield_list,params.grids(s), "CMM");
-        fini = params.fini{s};
-        fs(:,:,s) = fini(X,V);
-    
-    % 3.) Remapping ?
-    % e.g. after mod(iT,10) do remapping
-        if mod(iT,Nremap)==0
-            % add mapstack
-            Nmaps = params.Nmaps + 1;
-            params.Map_stack(:,:,1,s,Nmaps) = X;
-            params.Map_stack(:,:,2,s,Nmaps) = V;
-            params.Nmaps = Nmaps;
+function [fs,params] = CMM(params,fs)
+iT = params.it+1;
+dt = params.dt;
+N_remap = 10;
+for s = 1:params.Ns
 
-            composed_map = compose_maps_numerical(squeeze(params.Map_stack(:,:,:,s,:)), params.grids(s),params); 
-   
-            Xstar = composed_map(:,:,1);
-            Vstar = composed_map(:,:,2);
-            %reinitailize the E filed and inital condition
-            
-            
-            fini = params.fini{s};
-            fs(:,:,s) = fini(Xstar,Vstar);
-            [Efield] =vPoisson(fs,params.grids,params.charge);
-            params.Efield_list(:,1) = Efield;
-        end
+    N_nufi = mod(iT-1,N_remap) + 1;   % This ensures N_nufi is always between 1 and 100
+    if N_nufi ==1
+        N_nufi = N_nufi+1;
     end
-    
- 
+  
+    [X,V] = sympl_flow_Half(N_nufi,dt,params.grids(s).X,params.grids(s).V,params.charge(s)/params.Mass(s)*params.Efield_list,params.grids(s), "CMM");
+    % 1.) do the map composition
+%     Map_values = params.Map{s}(X,V);
+    [Xstar,Vstar] = wrap_compose(params,params.grids(s),squeeze(params.Map_stack(:,:,:,s,:)),X,V); 
+%     Xstar = Map_values(:,:,1);
+%     Vstar = Map_values(:,:,2);
+    % 2.) compose with inicond
+    fini = params.fini{s};
+    fs(:,:,s) = fini(Xstar,Vstar);
+
+% 3.) Remapping ?
+% e.g. after mod(iT,100) do remapping
+    if mod(iT,N_remap)==0
+        % add mapstack
+        Nmaps = params.Nmaps + 1;
+        params.Map_stack(:,:,1,s,Nmaps) = X;
+        params.Map_stack(:,:,2,s,Nmaps) = V;
+        params.Nmaps = Nmaps;
+%         composed_map = compose_maps_numerical(squeeze(params.Map_stack(:,:,:,s,:)), params.grids(s),params); % TODO
+%         params.Map{s} = @(X,V) composed_map;
+%         %reinitailize the E filed
+        [Efield] =vPoisson(fs,params.grids,params.charge);
+        params.Efield_list(:,1) = Efield;
+    end
+end
+
+
 [Efield] =vPoisson(fs,params.grids,params.charge);
 params.Efield = Efield;
 params.Efield_list(:,N_nufi) = Efield;
-    
-    end
-    
+
+end
     
 
     
@@ -176,5 +175,16 @@ end
         pause(0.01); % Pause for visualization
     end
     
+
+function [Xstar, Vstar ] = wrap_compose(params, grid, Map_stack, X,V)
+    Nmaps = params.Nmaps;    
+    Map_stack(:,:,1,Nmaps+1) = X;
+    Map_stack(:,:,2,Nmaps+1) = V;    
+    params.Nmaps = Nmaps+1;
+    composed_map = compose_maps_numerical(Map_stack,grid,params);  
+    params.Nmaps = Nmaps;
+    Xstar = composed_map(:,:,1);
+    Vstar = composed_map(:,:,2);
+end
     
     
