@@ -38,9 +38,7 @@ for i = N_maps:-1:1
     % Current query points  
     Query_X = current_numeric_x;
     Query_V = current_numeric_v;
-    
-    % Handle periodic boundary conditions
-    Query_X_periodic = mod(Query_X, grid.Lx-grid.dx); 
+ 
     
     %  Coordinate transformation to ensure interpolation function receives positive values
 
@@ -48,8 +46,8 @@ for i = N_maps:-1:1
     v_shifted = v + grid.Lv;
     
     %  Use correct coordinates to call interpolation function
-    Interpolated_Delta_X = lagrange2d_local_interp_periodic(Query_X_periodic, Query_V_shifted, x, v_shifted, Delta_X, order);
-    Interpolated_Delta_V = lagrange2d_local_interp_periodic(Query_X_periodic, Query_V_shifted, x, v_shifted, Delta_V, order);
+    Interpolated_Delta_X = lagrange2d_local_interp_periodic(Query_X, Query_V_shifted, x, v_shifted, Delta_X, order);
+    Interpolated_Delta_V = lagrange2d_local_interp_periodic(Query_X, Query_V_shifted, x, v_shifted, Delta_V, order);
     
     % Reshape interpolated results
     Interpolated_Delta_X = reshape(Interpolated_Delta_X, size(Query_X));
