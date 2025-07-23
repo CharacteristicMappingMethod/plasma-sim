@@ -12,13 +12,14 @@ function [params,data] = Sim(params)
     
     % Main loop over time
     Nsamples = 0;
+    time = 0;
     for iT = 1:params.Nt_max
         params.it = iT;
         % Perform a single time step
         [fs, params] = step(params, fs);
         
         % increase time
-        time = params.dt * iT
+        time = time + params.dt;
     
         % Measurements
         [params]=measure(params, fs);
@@ -31,7 +32,8 @@ function [params,data] = Sim(params)
             Nsamples = Nsamples + 1;
             data = save_config(params,data,fs,Nsamples);
         end
-    
+        
+        fprintf("iter: %d, time: %.1f, dt: %.2f\n",iT, time, params.dt)
         % Check if simulation end time is reached
         if time >= params.Tend
             break;
@@ -48,11 +50,15 @@ function [params,data] = Sim(params)
     
     
         if params.method == "predcorr"
-            [fs,params] = predictor_corrector(params,fs);
+            if isfield(params,"dt_adapt_tolerance")
+                [fs,params] = predictor_corrector_dt_adaptive(params,fs);
+            else
+                [fs,params] = predictor_corrector(params,fs);
+            end
         elseif params.method == "predcorr_multi"
             [fs,params] = predictor_corrector_subcycling_electrons(params,fs);
         elseif params.method == "predcorr_hybrid"
-            [fs,params] = predictor_corrector_hybrid(params,fs);
+            [fs,params] = predictor_corrector2(params,fs);
         elseif params.method == "NuFi"
             [fs,params] = NuFi(params,fs);
         elseif params.method == "CMM"
@@ -67,7 +73,7 @@ function [params,data] = Sim(params)
 function [fs,params] = CMM(params,fs)
 iT = params.it+1;
 dt = params.dt;
-N_remap = 10;
+N_remap = 10000000;
 for s = 1:params.Ns
 
     N_nufi = mod(iT-1,N_remap) + 1;   % This ensures N_nufi is always between 1 and 100

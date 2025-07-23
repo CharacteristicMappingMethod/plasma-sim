@@ -3,10 +3,10 @@ params = struct();
 
 %% General Simulation Parameters
 params.mycase       = "landau_damping";   % Options: "landau_damping", "two_stream"
-params.method       = "predcorr";         % Time integration method
-params.Nt_max       = 4000;               % Max number of time steps
-params.dt           = 0.5;                % Time step size
-params.Tend         = 60;                 % Simulation end time
+params.method       = "predcorr_hybrid";         % Time integration method
+params.Nt_max       = 4000000;               % Max number of time steps
+params.dt           = 0.01;                % Time step size
+params.Tend         = 20;                 % Simulation end time
 params.dt_save      = 10;                 % Save data every dt_save time units
 
 %% Grid Parameters
