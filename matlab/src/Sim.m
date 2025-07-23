@@ -7,6 +7,10 @@ function [params,data] = Sim(params)
     params.Efield = vPoisson(fs,params.grids,params.charge);
     params.Efield_list(:,1) = params.Efield;
     
+    % Initialize CPU timing arrays
+    params.tcpu = zeros(params.Nt_max, 1);
+    params.time_array = zeros(params.Nt_max, 1);
+    
     % first plot the initial condition
     plot_results(params, fs);
     
@@ -14,18 +18,24 @@ function [params,data] = Sim(params)
     Nsamples = 0;
     time = 0;
     for iT = 1:params.Nt_max
+        tic_iter = tic();  % Start timing for this iteration
+        
         params.it = iT;
         % Perform a single time step
         [fs, params] = step(params, fs);
         
         % increase time
         time = time + params.dt;
+        params.time_array(iT) = time;
     
         % Measurements
         [params]=measure(params, fs);
     
         % Plot results at each time step
         plot_results(params, fs);
+        
+        % Record CPU time for this iteration
+        params.tcpu(iT) = toc(tic_iter);
     
         % save config at specific times
         if mod(iT,params.dit_save) == 0
@@ -36,6 +46,9 @@ function [params,data] = Sim(params)
         fprintf("iter: %d, time: %.1f, dt: %.2f\n",iT, time, params.dt)
         % Check if simulation end time is reached
         if time >= params.Tend
+            % Trim arrays to actual size
+            params.tcpu = params.tcpu(1:iT);
+            params.time_array = params.time_array(1:iT);
             break;
         end
     end
@@ -73,7 +86,7 @@ function [params,data] = Sim(params)
 function [fs,params] = CMM(params,fs)
 iT = params.it+1;
 dt = params.dt;
-N_remap = 10000000;
+N_remap = params.N_remap;
 for s = 1:params.Ns
 
     N_nufi = mod(iT-1,N_remap) + 1;   % This ensures N_nufi is always between 1 and 100
