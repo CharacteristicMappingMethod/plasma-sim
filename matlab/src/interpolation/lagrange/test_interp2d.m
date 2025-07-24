@@ -3,7 +3,8 @@
 orders = [2, 4];
 Ns = 2.^(4:8);
 errors = zeros(length(Ns), length(orders));
-
+% choose method ("normal", "barycentric")
+method = "barycentric";
 % Exact function and evaluation grid
 f = @(x,y) sin(2*pi*x) .* cos(2*pi*y);
 [x_eval, y_eval] = meshgrid(linspace(0,1,200), linspace(0,1,200));
@@ -19,7 +20,7 @@ for o = 1:length(orders)
         ygrid = (0:N-1)/N;
         [X, Y] = meshgrid(xgrid, ygrid);
         F = f(X, Y);
-        F_interp = lagrange2d_local_interp_periodic(x_eval, y_eval, xgrid, ygrid, F, order);
+        F_interp = lagrange2d_local_interp_periodic(x_eval, y_eval, xgrid, ygrid, F, order, method);
         errors(k, o) = max(abs(F_interp - f_exact));
     end
 end

@@ -1,6 +1,9 @@
 
 clear; close all; clc;
 
+% choose method ("normal", "barycentric")
+method = "barycentric"
+
 % Function to interpolate
 f = @(x) sin(2*pi*x).*cos(6*pi*x)+1;
 
@@ -20,7 +23,7 @@ for k = 1:length(Ns)
     N = Ns(k);
     xgrid = (0:N-1) / N;           % periodic coarse grid
     ygrid = f(xgrid);              % function values at coarse grid
-    f_interp = lagrange_local_interp_periodic(x_ref, xgrid, ygrid, order);
+    f_interp = lagrange1d_local_interp_periodic(x_ref, xgrid, ygrid, order, method);
     
     % Error compared to exact solution
     errors(k) = max(abs(f_interp - f_ref));
