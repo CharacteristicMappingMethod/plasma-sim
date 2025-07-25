@@ -1,4 +1,4 @@
-function [Map_composed_numeric] = compose_maps_numerical(Maps, grid, Params)
+function [Map_composed_numeric] = compose_maps_numerical(Maps, grid, params)
 % COMPOSE_MAPS_NUMERICAL Numerically compose a sequence of maps using displacement interpolation
 %
 % SYNTAX:
@@ -14,8 +14,6 @@ function [Map_composed_numeric] = compose_maps_numerical(Maps, grid, Params)
 
 % OUTPUT:
 %   Map_composed_numeric - 3D array [Nv, Nx, 2] containing the composed map
-
-order = 3;
 
 % Get number of maps
 N_maps = size(Maps, 4);
@@ -46,8 +44,9 @@ for i = N_maps:-1:1
     v_shifted = v + grid.Lv;
     
     %  Use correct coordinates to call interpolation function
-    Interpolated_Delta_X = lagrange2d_local_interp_periodic(Query_X, Query_V_shifted, x, v_shifted, Delta_X, order);
-    Interpolated_Delta_V = lagrange2d_local_interp_periodic(Query_X, Query_V_shifted, x, v_shifted, Delta_V, order);
+    twopi = 2*pi;
+    Interpolated_Delta_X = interp2d_periodic(Query_X/params.Lx*twopi, Query_V_shifted/params.Lv*pi, x/params.Lx*twopi, v_shifted/params.Lv*pi, Delta_X); % all coordinates must be rescaled to [0,2pi]
+    Interpolated_Delta_V = interp2d_periodic(Query_X/params.Lx*twopi, Query_V_shifted/params.Lv*pi, x/params.Lx*twopi, v_shifted/params.Lv*pi, Delta_V);
     
     % Reshape interpolated results
     Interpolated_Delta_X = reshape(Interpolated_Delta_X, size(Query_X));
