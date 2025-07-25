@@ -15,7 +15,7 @@ function [Map_composed_numeric] = compose_maps_numerical(Maps, grid, Params)
 % OUTPUT:
 %   Map_composed_numeric - 3D array [Nv, Nx, 2] containing the composed map
 
-order = 4;
+order = 3;
 
 % Get number of maps
 N_maps = size(Maps, 4);

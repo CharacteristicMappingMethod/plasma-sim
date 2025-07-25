@@ -15,7 +15,7 @@ function [Map_composed_numeric] = compose_maps_numerical(Maps, grid, Params)
 % OUTPUT:
 %   Map_composed_numeric - 3D array [Nv, Nx, 2] containing the composed map
 
-order = 4;
+order = 3;
 
 % Get number of maps
 N_maps = size(Maps, 4);
@@ -38,18 +38,16 @@ for i = N_maps:-1:1
     % Current query points  
     Query_X = current_numeric_x;
     Query_V = current_numeric_v;
+ 
     
-    % 🔧 修正1: 处理周期性边界条件
-    Query_X_periodic = mod(Query_X, grid.Lx-grid.dx); 
-    
-    % 🔧 修正2: 坐标变换以确保插值函数接收正值
-    % 将速度坐标从 [-Lv, Lv] 变换到 [0, 2*Lv]
+    %  Coordinate transformation to ensure interpolation function receives positive values
+
     Query_V_shifted = Query_V + grid.Lv;
     v_shifted = v + grid.Lv;
     
-    % 🔧 修正3: 使用正确的坐标调用插值函数
-    Interpolated_Delta_X = lagrange2d_local_interp_periodic(Query_X_periodic, Query_V_shifted, x, v_shifted, Delta_X, order);
-    Interpolated_Delta_V = lagrange2d_local_interp_periodic(Query_X_periodic, Query_V_shifted, x, v_shifted, Delta_V, order);
+    %  Use correct coordinates to call interpolation function
+    Interpolated_Delta_X = lagrange2d_local_interp_periodic(Query_X, Query_V_shifted, x, v_shifted, Delta_X, order);
+    Interpolated_Delta_V = lagrange2d_local_interp_periodic(Query_X, Query_V_shifted, x, v_shifted, Delta_V, order);
     
     % Reshape interpolated results
     Interpolated_Delta_X = reshape(Interpolated_Delta_X, size(Query_X));

@@ -3,6 +3,7 @@ params.mycase = "two_stream";          % "two_stream"
 params.Nx = 2^8;                            % Number of spatial grid points
 params.Nv = 2^8;                            % Number of velocity grid points
 params.Ns = 1;                              % Number of species (electrons and ions)
+params.N_remap = 10;
 params.method="predcorr";
 %params.dt_adapt_tolerance = 0.1;            % realtive error allowed during time integration
 %params.dt_interv = [1/100, 1];
