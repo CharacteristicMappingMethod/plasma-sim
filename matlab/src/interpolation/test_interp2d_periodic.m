@@ -4,7 +4,7 @@ clear all
 close all
 
 Ns = 2.^(4:8);
-orders = [2, 4]; % Lagrange orders
+orders = [ 3, 10]; % Lagrange orders
 schemes = {'bspline', 'lagrange-bary', 'lagrange-normal'};
 colors = {'-o', '-^', '-s'};
 
@@ -28,6 +28,7 @@ for k = 1:length(Ns)
 
     % --- B-spline ---
     opts = struct('scheme', 'bspline', 'degree', 3, 'use_mex', true);
+    F_interp_bspl = interp2d_periodic(x_eval, y_eval, xgrid, ygrid, F, opts);
     tic;
     F_interp_bspl = interp2d_periodic(x_eval, y_eval, xgrid, ygrid, F, opts);
     times(k,1,1) = toc;
