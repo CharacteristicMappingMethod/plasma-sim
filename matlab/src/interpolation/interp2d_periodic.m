@@ -21,7 +21,7 @@ function F_interp = interp2d_periodic(xq, yq, xgrid, ygrid, Fgrid, opts)
         opts = struct();
     end
     if ~isfield(opts, 'scheme'),    opts.scheme = 'lagrange-bary'; end
-    if ~isfield(opts, 'order'),     opts.order = 4; end
+    if ~isfield(opts, 'order'),     opts.order = 3; end
     if ~isfield(opts, 'degree'),    opts.degree = 3; end
     if ~isfield(opts, 'use_mex'),   opts.use_mex = true; end
     if ~isfield(opts, 'cache'),     opts.cache = true; end

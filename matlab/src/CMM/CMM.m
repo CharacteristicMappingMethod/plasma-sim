@@ -48,10 +48,6 @@ function [fs, params] = CMM(params, fs)
             params.Map_stack(:,:,2,s,Nmaps) = V;
             params.Nmaps = Nmaps;
 
-            % Recompute electric field
-            [Efield] = vPoisson(fs, params.grids, params.charge);
-            params.Efield_list(:,1) = Efield;
-
             % Reset N_nufi counter after remapping
             N_nufi = 1;
         end
