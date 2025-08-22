@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Script to measure error between CMM N_remap = 10 and N_remap = 1000
 % Benchmark: NuFi method, Test cases: CMM with different N_remap
-% Test case: LANDAU DAMPING
+% Test case: Two Stream
 % Error measured at time = 10
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 close all
@@ -11,10 +11,10 @@ addpath(genpath('./src/'),genpath('./params/'))
 DEFAULTS
 
 % Run simulation with NuFi method (benchmark)
-fprintf('Running benchmark simulation with NuFi method (Landau Damping)...\n');
-PARAMS_landau_damping;
+fprintf('Running benchmark simulation with NuFi method (Two Stream)...\n');
+PARAMS_two_stream;
 params.method = "NuFi";
-params.Tend = 20;
+params.Tend = 10;
 [params_benchmark, data_benchmark] = Sim(params);
 
 % Save benchmark data and clear everything
@@ -23,11 +23,11 @@ clear all
 addpath(genpath('./src/'),genpath('./params/'))
 
 % Run simulation with CMM N_remap = 1000
-fprintf('Running CMM simulation with N_remap = 1000 (Landau Damping)...\n');
-PARAMS_landau_damping;
+fprintf('Running CMM simulation with N_remap = 1000 (Two Stream)...\n');
+PARAMS_two_stream;
 params.N_remap = 1000;
 params.method = "CMM";
-params.Tend = 20;
+params.Tend = 10;
 [params_cmm1000, data_cmm1000] = Sim(params);
 
 % Save CMM 1000 data and clear everything
@@ -36,11 +36,11 @@ clear all
 addpath(genpath('./src/'),genpath('./params/'))
 
 % Run simulation with CMM N_remap = 20
-fprintf('Running CMM simulation with N_remap = 20 (Landau Damping)...\n');
-PARAMS_landau_damping;
-params.N_remap = 20;
+fprintf('Running CMM simulation with N_remap = 20 (Two Stream)...\n');
+PARAMS_two_stream;
+params.N_remap = 30;
 params.method = "CMM";
-params.Tend = 20;
+params.Tend = 10;
 [params_cmm10, data_cmm10] = Sim(params);
 
 % Extract map stack data for N_remap = 20 case
@@ -53,7 +53,7 @@ load('temp_benchmark.mat');
 load('temp_cmm1000.mat');
 
 % Find the time step closest to t = 10 for all methods
-target_time = 20;
+target_time = 9.75;
 time_benchmark = data_benchmark.time;
 time_cmm1000 = data_cmm1000.time;
 time_cmm10 = data_cmm10.time;
@@ -96,7 +96,7 @@ error_L1_abs_10 = sum(abs(f_cmm10(:) - f_benchmark(:)));
 error_Linf_abs_10 = max(abs(f_cmm10(:) - f_benchmark(:)));
 
 % Display results
-fprintf('\n=== ERROR ANALYSIS RESULTS (LANDAU DAMPING) ===\n');
+fprintf('\n=== ERROR ANALYSIS RESULTS (Two_stream) ===\n');
 fprintf('Benchmark: NuFi method\n');
 fprintf('Error measured at time ≈ %.1f\n\n', target_time);
 
@@ -119,13 +119,13 @@ fprintf('================================\n');
 
 % Plot individual maps in the map stack for CMM N_remap = 20
 if Nmaps_cmm10 > 0
-    fprintf('\nPlotting individual maps from CMM N_remap=20 map stack (Landau Damping)...\n');
+    fprintf('\nPlotting individual maps from CMM N_remap=20 map stack (Two_stream)...\n');
     
     % Get grid information for plotting
     grid_info = params_cmm10.grids(1); % Assuming we want to plot for first species
     
     % Create a figure for all maps
-    figure('Name', 'CMM Map Stack (N_remap=20, Landau Damping)', 'Position', [100, 100, 1200, 800]);
+    figure('Name', 'CMM Map Stack (N_remap=20, Two_stream)', 'Position', [100, 100, 1200, 800]);
     
     % Calculate subplot layout (try to make it roughly square)
     n_cols = ceil(sqrt(Nmaps_cmm10 * 2)); % *2 because we plot X and V components
@@ -159,10 +159,10 @@ if Nmaps_cmm10 > 0
                 min(Map_V,[],'all'), max(Map_V,[],'all'));
     end
     
-    sgtitle(sprintf('CMM Map Stack (N_{remap}=20, Landau Damping): %d Maps Generated', Nmaps_cmm10));
+    sgtitle(sprintf('CMM Map Stack (N_{remap}=20, Two Stream): %d Maps Generated', Nmaps_cmm10));
     
     % Also create displacement plots (Map - Identity)
-    figure('Name', 'CMM Map Displacements (N_remap=20, Landau Damping)', 'Position', [150, 150, 1200, 800]);
+    figure('Name', 'CMM Map Displacements (N_remap=20, Two Stream)', 'Position', [150, 150, 1200, 800]);
     
     for map_idx = 1:Nmaps_cmm10
         % Extract X and V components
@@ -192,28 +192,28 @@ if Nmaps_cmm10 > 0
         ylabel('v');
     end
     
-    sgtitle(sprintf('CMM Map Displacements (N_{remap}=20, Landau Damping): %d Maps Generated', Nmaps_cmm10));
+    sgtitle(sprintf('CMM Map Displacements (N_{remap}=20, Two Stream): %d Maps Generated', Nmaps_cmm10));
 end
 
 % Plot comparison
 figure(1);
 subplot(2,3,1);
 imagesc(f_benchmark);
-title('NuFi (Benchmark) - Landau Damping');
+title('NuFi (Benchmark) - Two Stream');
 xlabel('Velocity index');
 ylabel('Position index');
 colorbar;
 
 subplot(2,3,2);
 imagesc(f_cmm1000);
-title('CMM N_{remap} = 1000 - Landau Damping');
+title('CMM N_{remap} = 1000 - Two Stream');
 xlabel('Velocity index');
 ylabel('Position index');
 colorbar;
 
 subplot(2,3,3);
 imagesc(f_cmm10);
-title('CMM N_{remap} = 20 - Landau Damping');
+title('CMM N_{remap} = 20 - Two Stream');
 xlabel('Velocity index');
 ylabel('Position index');
 colorbar;
@@ -239,7 +239,7 @@ xlabel('Velocity index');
 ylabel('Position index');
 colorbar;
 
-sgtitle(sprintf('Distribution Function Comparison (Landau Damping) at t ≈ %.1f', target_time));
+sgtitle(sprintf('Distribution Function Comparison (Two Stream) at t ≈ %.1f', target_time));
 
 % Save results
 results = struct();

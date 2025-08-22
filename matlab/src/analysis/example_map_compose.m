@@ -4,7 +4,7 @@ clear; clc; close all;
 
 %% 1. Configuration and Grid Initialization
 % ========== USER PARAMETERS ==========
-N_MAPS = 12;  % Change this to any number of maps you want
+N_MAPS = 5;  % Change this to any number of maps you want
 VISUALIZE_INDIVIDUAL_MAPS = true;  % Set to false to skip individual map plots
 
 % Set up grid using CMM conventions: x in [0, Lx), v in [-Lv, Lv)
@@ -258,15 +258,62 @@ pcolor(X, V, diff_v); shading flat; colorbar;
 title('|Difference| in ΔV');
 xlabel('x'); ylabel('v');
 
-% Print error statistics
-fprintf('\n--- Error Statistics (PERIODIC Displacement Fields) ---\n');
-fprintf('Final periodicity errors - Analytical X: %.6e, Numerical X: %.6e\n', ...
-        final_period_error_x_exact, final_period_error_x_numerical);
-fprintf('Max analytical displacement - X: %.6e\n', max(abs(Final_Disp_X_exact),[],'all'));
-fprintf('Max analytical displacement - V: %.6e\n', max(abs(Final_Disp_V_exact),[],'all'));
-fprintf('Max absolute error in ΔX: %.6e\n', max(diff_x(:)));
-fprintf('Max absolute error in ΔV: %.6e\n', max(diff_v(:)));
-fprintf('Mean absolute error in ΔX: %.6e\n', mean(diff_x(:)));
-fprintf('Mean absolute error in ΔV: %.6e\n', mean(diff_v(:)));
-fprintf('RMS error in ΔX: %.6e\n', sqrt(mean(diff_x(:).^2)));
-fprintf('RMS error in ΔV: %.6e\n', sqrt(mean(diff_v(:).^2)));
+%% 6. Calculate Comprehensive Error Norms (L1, L2, L∞) and Relative Errors
+fprintf('\n=== COMPREHENSIVE ERROR ANALYSIS ===\n');
+
+% Calculate error norms for displacement differences
+error_X = Final_Disp_X_numerical - Final_Disp_X_exact;
+error_V = Final_Disp_V_numerical - Final_Disp_V_exact;
+
+% L1 (Manhattan) norm: sum of absolute values
+L1_error_X = sum(abs(error_X(:))) * dx * dv;  % Scaled by grid spacing for proper integration
+L1_error_V = sum(abs(error_V(:))) * dx * dv;
+
+% L2 (Euclidean) norm: RMS scaled by domain area
+L2_error_X = sqrt(sum(error_X(:).^2) * dx * dv);
+L2_error_V = sqrt(sum(error_V(:).^2) * dx * dv);
+
+% L∞ (Maximum) norm: maximum absolute value
+Linf_error_X = max(abs(error_X(:)));
+Linf_error_V = max(abs(error_V(:)));
+
+% Calculate norms of analytical solution for relative errors
+L1_analytical_X = sum(abs(Final_Disp_X_exact(:))) * dx * dv;
+L1_analytical_V = sum(abs(Final_Disp_V_exact(:))) * dx * dv;
+
+L2_analytical_X = sqrt(sum(Final_Disp_X_exact(:).^2) * dx * dv);
+L2_analytical_V = sqrt(sum(Final_Disp_V_exact(:).^2) * dx * dv);
+
+Linf_analytical_X = max(abs(Final_Disp_X_exact(:)));
+Linf_analytical_V = max(abs(Final_Disp_V_exact(:)));
+
+% Calculate relative errors (avoid division by zero)
+rel_L1_error_X = L1_error_X / max(L1_analytical_X, eps);
+rel_L1_error_V = L1_error_V / max(L1_analytical_V, eps);
+
+rel_L2_error_X = L2_error_X / max(L2_analytical_X, eps);
+rel_L2_error_V = L2_error_V / max(L2_analytical_V, eps);
+
+rel_Linf_error_X = Linf_error_X / max(Linf_analytical_X, eps);
+rel_Linf_error_V = Linf_error_V / max(Linf_analytical_V, eps);
+
+
+
+% Print comprehensive error statistics
+fprintf('\n--- ABSOLUTE ERRORS ---\n');
+fprintf('L1 Errors:\n');
+fprintf('  ΔX: %.6e,  ΔV: %.6e\n', L1_error_X, L1_error_V);
+fprintf('L2 Errors:\n');
+fprintf('  ΔX: %.6e,  ΔV: %.6e\n', L2_error_X, L2_error_V);
+fprintf('L∞ Errors:\n');
+fprintf('  ΔX: %.6e,  ΔV: %.6e\n', Linf_error_X, Linf_error_V);
+
+fprintf('\n--- RELATIVE ERRORS ---\n');
+fprintf('Relative L1 Errors:\n');
+fprintf('  ΔX: %.6e,  ΔV: %.6e\n', rel_L1_error_X, rel_L1_error_V);
+fprintf('Relative L2 Errors:\n');
+fprintf('  ΔX: %.6e,  ΔV: %.6e\n', rel_L2_error_X, rel_L2_error_V);
+fprintf('Relative L∞ Errors:\n');
+fprintf('  ΔX: %.6e,  ΔV: %.6e\n', rel_Linf_error_X, rel_Linf_error_V);
+
+fprintf('\n=== ERROR ANALYSIS COMPLETE ===\n');

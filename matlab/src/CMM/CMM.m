@@ -12,7 +12,7 @@ function [fs, params] = CMM(params, fs)
 %   fs     - Updated distribution function
 %   params - Updated parameters structure
 
-    iT = params.it + 1;
+    iT = params.it;
     dt = params.dt;
     N_remap = params.N_remap;
 
