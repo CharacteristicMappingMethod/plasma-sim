@@ -4,7 +4,7 @@ clear; clc; close all;
 
 %% 1. Configuration and Grid Initialization
 % ========== USER PARAMETERS ==========
-N_MAPS = 5;  % Change this to any number of maps you want
+N_MAPS = 4;  % Change this to any number of maps you want
 VISUALIZE_INDIVIDUAL_MAPS = true;  % Set to false to skip individual map plots
 
 % Set up grid using CMM conventions: x in [0, Lx), v in [-Lv, Lv)
@@ -317,3 +317,187 @@ fprintf('Relative L∞ Errors:\n');
 fprintf('  ΔX: %.6e,  ΔV: %.6e\n', rel_Linf_error_X, rel_Linf_error_V);
 
 fprintf('\n=== ERROR ANALYSIS COMPLETE ===\n');
+
+%% 7. CONVERGENCE ANALYSIS - Error vs Grid Resolution
+fprintf('\n=== STARTING CONVERGENCE ANALYSIS ===\n');
+
+% Define grid resolutions to test (powers of 2)
+N_resolutions = [2^5, 2^6, 2^7, 2^8];  % 32, 64, 128, 256
+n_res = length(N_resolutions);
+
+% Store L∞ errors for each resolution
+Linf_errors_X = zeros(n_res, 1);
+Linf_errors_V = zeros(n_res, 1);
+grid_spacings = zeros(n_res, 1);
+
+% Use same map parameters but test on different grids
+fprintf('Testing convergence on %d different grid resolutions...\n', n_res);
+
+for res_idx = 1:n_res
+    Nx_test = N_resolutions(res_idx);
+    Nv_test = N_resolutions(res_idx);
+    
+    fprintf('  Resolution %d/%d: %dx%d grid...\n', res_idx, n_res, Nx_test, Nv_test);
+    
+    % Create test grid with same domain but different resolution
+    x_test = (0:Nx_test-1) * Lx / Nx_test;
+    v_test = (0:Nv_test-1) * 2*Lv / Nv_test - Lv;
+    [X_test, V_test] = meshgrid(x_test, v_test);
+    
+    dx_test = x_test(2) - x_test(1);
+    dv_test = v_test(2) - v_test(1);
+    grid_spacings(res_idx) = sqrt(dx_test^2 + dv_test^2);  % Combined grid spacing
+    
+    % Create test grid structure
+    grid_test.X = X_test;
+    grid_test.V = V_test;
+    grid_test.x = x_test;
+    grid_test.v = v_test;
+    grid_test.Lx = Lx;
+    grid_test.Lv = Lv;
+    grid_test.dx = dx_test;
+    grid_test.dv = dv_test;
+    
+    % Generate maps for this resolution
+    Maps_test = zeros(Nv_test, Nx_test, 2, N_MAPS);
+    
+    for i = 1:N_MAPS
+        % Get parameters for this map (same as before)
+        amp1 = map_params(i,1);
+        freq1_x = map_params(i,2);
+        freq1_v = map_params(i,3);
+        amp2 = map_params(i,4);
+        freq2_x = map_params(i,5);
+        func1 = map_params(i,6);
+        func2 = map_params(i,7);
+        
+        % Apply function choices
+        if func1 == 1  % sin-sin
+            Map_X_test = X_test + amp1 * sin(freq1_x * X_test) .* sin(freq1_v * V_test);
+        else  % cos-cos
+            Map_X_test = X_test + amp1 * cos(freq1_x * X_test) .* cos(freq1_v * V_test);
+        end
+        
+        if func2 == 1  % sin
+            Map_V_test = V_test + amp2 * sin(freq2_x * X_test);
+        else  % cos
+            Map_V_test = V_test + amp2 * cos(freq2_x * X_test);
+        end
+        
+        Maps_test(:,:,1,i) = Map_X_test;
+        Maps_test(:,:,2,i) = Map_V_test;
+    end
+    
+    % Analytical composition for this resolution
+    X_current_test = X_test;
+    V_current_test = V_test;
+    
+    for i = N_MAPS:-1:1
+        amp1 = map_params(i,1);
+        freq1_x = map_params(i,2);
+        freq1_v = map_params(i,3);
+        amp2 = map_params(i,4);
+        freq2_x = map_params(i,5);
+        func1 = map_params(i,6);
+        func2 = map_params(i,7);
+        
+        if func1 == 1  % sin-sin
+            X_new_test = X_current_test + amp1 * sin(freq1_x * X_current_test) .* sin(freq1_v * V_current_test);
+        else  % cos-cos
+            X_new_test = X_current_test + amp1 * cos(freq1_x * X_current_test) .* cos(freq1_v * V_current_test);
+        end
+        
+        if func2 == 1  % sin
+            V_new_test = V_current_test + amp2 * sin(freq2_x * X_current_test);
+        else  % cos
+            V_new_test = V_current_test + amp2 * cos(freq2_x * X_current_test);
+        end
+        
+        X_current_test = X_new_test;
+        V_current_test = V_new_test;
+    end
+    
+    Map_final_exact_test = zeros(Nv_test, Nx_test, 2);
+    Map_final_exact_test(:,:,1) = X_current_test;
+    Map_final_exact_test(:,:,2) = V_current_test;
+    
+    % Numerical composition for this resolution
+    Map_final_numerical_test = compose_maps_numerical(Maps_test, grid_test, params);
+    
+    % Calculate errors
+    Final_Disp_X_exact_test = Map_final_exact_test(:,:,1) - X_test;
+    Final_Disp_V_exact_test = Map_final_exact_test(:,:,2) - V_test;
+    Final_Disp_X_numerical_test = Map_final_numerical_test(:,:,1) - X_test;
+    Final_Disp_V_numerical_test = Map_final_numerical_test(:,:,2) - V_test;
+    
+    error_X_test = Final_Disp_X_numerical_test - Final_Disp_X_exact_test;
+    error_V_test = Final_Disp_V_numerical_test - Final_Disp_V_exact_test;
+    
+    % Store L∞ error norms
+    Linf_errors_X(res_idx) = max(abs(error_X_test(:)));
+    Linf_errors_V(res_idx) = max(abs(error_V_test(:)));
+    
+    fprintf('    Grid: %dx%d, L∞ errors: ΔX=%.3e, ΔV=%.3e\n', ...
+            Nx_test, Nv_test, Linf_errors_X(res_idx), Linf_errors_V(res_idx));
+end
+
+% Calculate convergence rates
+fprintf('\nCalculating convergence rates...\n');
+
+% Fit power law: error = C * h^p, where h is grid spacing, p is convergence rate
+% log(error) = log(C) + p * log(h)
+log_h = log(grid_spacings);
+
+% Calculate L∞ convergence rates
+conv_rates = struct();
+
+% L∞ convergence rates
+p_Linf_X = polyfit(log_h, log(Linf_errors_X), 1);
+p_Linf_V = polyfit(log_h, log(Linf_errors_V), 1);
+conv_rates.Linf_X = p_Linf_X(1);
+conv_rates.Linf_V = p_Linf_V(1);
+
+% Create convergence plot
+figure(N_MAPS + 2);
+set(gcf, 'Position', [100, 100, 600, 500]);
+sgtitle(sprintf('%d-Map Composition: L∞ Convergence Analysis', N_MAPS), 'FontSize', 14);
+
+% L∞ norm convergence vs number of grid points
+loglog(N_resolutions, Linf_errors_X, 'ro-', 'LineWidth', 2, 'MarkerSize', 8);
+hold on;
+loglog(N_resolutions, Linf_errors_V, 'bs-', 'LineWidth', 2, 'MarkerSize', 8);
+xlabel('Number of Grid Points'); ylabel('L∞ Error');
+title('L∞ Norm Convergence');
+legend('ΔX', 'ΔV', 'Location', 'best');
+grid on;
+
+% Print convergence results
+fprintf('\n=== CONVERGENCE ANALYSIS RESULTS ===\n');
+fprintf('Grid resolutions tested: ');
+for i = 1:n_res
+    fprintf('%dx%d ', N_resolutions(i), N_resolutions(i));
+end
+fprintf('\n\n');
+
+fprintf('Measured L∞ Convergence Rates:\n');
+fprintf('  ΔX: %6.2f\n', conv_rates.Linf_X);
+fprintf('  ΔV: %6.2f\n', conv_rates.Linf_V);
+fprintf('\n');
+
+% Interpretation
+fprintf('Interpretation:\n');
+avg_rate = mean([conv_rates.Linf_X, conv_rates.Linf_V]);
+if avg_rate > 3.5
+    fprintf('✓ Excellent convergence observed (close to O(h⁴) theoretical)\n');
+elseif avg_rate > 2.5
+    fprintf('✓ Good convergence observed\n');
+elseif avg_rate > 1.5
+    fprintf('○ Moderate convergence observed\n');
+else
+    fprintf('⚠ Slower than expected convergence - may indicate:\n');
+    fprintf('  - Interpolation limitations\n');
+    fprintf('  - Map complexity effects\n');
+    fprintf('  - Accumulated composition errors\n');
+end
+
+fprintf('\n=== CONVERGENCE ANALYSIS COMPLETE ===\n');

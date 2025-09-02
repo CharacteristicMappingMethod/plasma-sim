@@ -18,29 +18,39 @@ function [fs, params] = CMM(params, fs)
 
     % Persistent counter for N_nufi that increments across function calls
     persistent N_nufi;
-    if isempty(N_nufi)
+   if isempty(N_nufi)
         N_nufi = 1;
     end
+   % Increment N_nufi counter
+      N_nufi = N_nufi + 1;
+    % Initialize coordinate maps storage if not exists
+    if ~isfield(params, 'coordinate_maps')
+        params.coordinate_maps.X = zeros(params.grids(1).size(1), params.grids(1).size(2), params.Ns);
+        params.coordinate_maps.V = zeros(params.grids(1).size(1), params.grids(1).size(2), params.Ns);
+    end
+
 
     % Loop over all particle species
     for s = 1:params.Ns
-        % Increment N_nufi counter
-        N_nufi = N_nufi + 1;
 
         % Apply symplectic flow for half step
         [X, V] = sympl_flow_Half(N_nufi, dt, params.grids(s).X, params.grids(s).V, ...
                                 params.charge(s)/params.Mass(s)*params.Efield_list, ...
-                                params.grids(s), "CMM");
+                                params.grids(s), "CMM", params);
 
         % Compose with existing maps
         [Xstar, Vstar] = wrap_compose(params, params.grids(s), ...
                                      squeeze(params.Map_stack(:,:,:,s,:)), X, V);
 
+        % Store coordinate maps for analysis
+        params.coordinate_maps.X(:,:,s) = Xstar;
+        params.coordinate_maps.V(:,:,s) = Vstar;
+
         % Evaluate initial condition at new positions
         fini = params.fini{s};
         fs(:,:,s) = fini(Xstar, Vstar);
-
-        % Perform remapping at specified intervals
+    end
+            % Perform remapping at specified intervals
         if mod(iT, N_remap) == 0
             % Add current map to stack
             Nmaps = params.Nmaps + 1;
@@ -51,7 +61,6 @@ function [fs, params] = CMM(params, fs)
             % Reset N_nufi counter after remapping
             N_nufi = 1;
         end
-    end
 
     % Update electric field for current step
     [Efield] = vPoisson(fs, params.grids, params.charge);
@@ -59,7 +68,7 @@ function [fs, params] = CMM(params, fs)
     params.Efield_list(:,N_nufi) = Efield;
 end
 
-function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, method)
+function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, method, params)
 % Symplectic flow for half time step in CMM method
 %
 % This function applies a symplectic flow to advance particle positions
@@ -72,6 +81,7 @@ function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, method)
 %   Efield - Electric field array
 %   grid   - Grid structure
 %   method - Method type ("CMM" or "NuFi")
+%   params - Parameters structure
 %
 % Outputs:
 %   X, V   - Updated position and velocity arrays
@@ -114,14 +124,24 @@ function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, method)
         Uv = @(X,V,E) -reshape(interp1(grid.x, E, reshape(periodic(X),[],1), mint), grid.size);
     end
 
-    % Apply symplectic flow: n-1 full steps
-    while n > 2
-        n = n - 1;
-        X = X - dt * Ux(X,V);  % Position update (inverse signs for backward flow)
-        V = V - dt * Uv(X,V,Efield(:,n));  % Velocity update
-    end
+    % Apply symplectic flow based on number of maps
+    if params.Nmaps == 0
+      
+        while n > 2
+            n = n - 1;
+            X = X - dt * Ux(X,V);  % Position update (inverse signs for backward flow)
+            V = V - dt * Uv(X,V,Efield(:,n));  % Velocity update
+        end
 
-    % Final half step
-    X = X - dt * Ux(X,V);
-    V = V - (dt / 2) * Uv(X,V,Efield(:,1));
+        % Final half step
+        X = X - dt * Ux(X,V);
+        V = V - (dt / 2) * Uv(X,V,Efield(:,1));
+    else
+        
+        while n > 1
+            n = n - 1;
+            X = X - dt * Ux(X,V);  
+            V = V - dt * Uv(X,V,Efield(:,n)); 
+        end
+    end
 end
