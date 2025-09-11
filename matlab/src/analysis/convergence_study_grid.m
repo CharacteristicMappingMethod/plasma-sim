@@ -60,10 +60,81 @@ fprintf('Grid sizes: %s\n', mat2str(grid_sizes));
 fprintf('N_remap = %d, Target time = %.1f\n', N_remap_value, target_time);
 fprintf('Benchmark: %s with %dx%d grid\n', benchmark_method, grid_sizes(end), grid_sizes(end));
 
-% Initialize storage for results
-distribution_functions = cell(length(grid_sizes), 1);
-simulation_times = zeros(length(grid_sizes), 1);
-grid_params = cell(length(grid_sizes), 1);
+% Check for existing complete results file
+results_filename = sprintf('convergence_study_results_%s_t%.1f_Nremap%d_%s.mat', ...
+                          test_case_name, target_time, N_remap_value, benchmark_method);
+
+if exist(results_filename, 'file')
+    fprintf('\n=== FOUND EXISTING RESULTS ===\n');
+    fprintf('Loading results from: %s\n', results_filename);
+    try
+        load(results_filename, 'results');
+        
+        % Verify the results are complete and valid
+        if isfield(results, 'distribution_functions') && ...
+           isfield(results, 'L_inf_errors') && ...
+           length(results.grid_sizes) == length(grid_sizes) && ...
+           all(results.grid_sizes == grid_sizes)
+            
+            fprintf('✓ Complete results found. Skipping simulations.\n');
+            fprintf('✓ Test case: %s, Time: %.1f, N_remap: %d\n', ...
+                    results.test_case, results.target_time, results.N_remap);
+            
+            % Extract results for plotting and analysis
+            distribution_functions = results.distribution_functions;
+            simulation_times = results.simulation_times;
+            grid_params = results.grid_params;
+            L_inf_errors = results.L_inf_errors;
+            L_inf_rel_errors = results.L_inf_rel_errors;
+            convergence_rates = results.convergence_rates;
+            mean_conv_rate = results.mean_convergence_rate;
+            
+            if isfield(results, 'regression_convergence_rate')
+                regression_conv_rate = results.regression_convergence_rate;
+                R_squared = results.R_squared;
+                % Reconstruct C_constant for plotting if needed
+                if isfield(results, 'C_constant')
+                    C_constant = results.C_constant;
+                else
+                    % Reconstruct C_constant from regression parameters
+                    if ~isnan(regression_conv_rate)
+                        valid_indices = L_inf_errors > 0;
+                        if sum(valid_indices) >= 2
+                            h_values = 1./grid_sizes(1:end-1);
+                            valid_h = h_values(valid_indices);
+                            valid_errors = L_inf_errors(valid_indices);
+                            log_h = log(valid_h);
+                            log_error = log(valid_errors);
+                            coeffs = polyfit(log_h, log_error, 1);
+                            log_C = coeffs(2);
+                            C_constant = exp(log_C);
+                        end
+                    end
+                end
+            end
+            
+            % Skip to visualization section
+            fprintf('Proceeding to visualization and summary...\n\n');
+            goto_visualization = true;
+        else
+            fprintf('⚠️  Results file incomplete or mismatched. Re-running simulations.\n');
+            goto_visualization = false;
+        end
+    catch ME
+        fprintf('⚠️  Error loading results file: %s\n', ME.message);
+        fprintf('Re-running simulations.\n');
+        goto_visualization = false;
+    end
+else
+    fprintf('\nNo existing results found. Running simulations...\n');
+    goto_visualization = false;
+end
+
+if ~goto_visualization
+    % Initialize storage for results
+    distribution_functions = cell(length(grid_sizes), 1);
+    simulation_times = zeros(length(grid_sizes), 1);
+    grid_params = cell(length(grid_sizes), 1);
 
 %% Run simulations for each grid size
 for i = 1:length(grid_sizes)
@@ -145,6 +216,8 @@ for i = 1:length(grid_sizes)
     fprintf('Loaded results for grid %dx%d\n', grid_sizes(i), grid_sizes(i));
 end
 
+end  % End of if ~goto_visualization block
+
 %% Extract benchmark (finest grid) solution
 benchmark_f = distribution_functions{end};  % 1024x1024 grid
 benchmark_params = grid_params{end};
@@ -153,20 +226,23 @@ benchmark_params = grid_params{end};
 x_bench = benchmark_params.grids(1).x;
 v_bench = benchmark_params.grids(1).v;
 
+% Create benchmark grid meshgrid
+[X_bench, V_bench] = meshgrid(x_bench, v_bench);
+
 fprintf('\nBenchmark grid: %dx%d (%s method)\n', length(x_bench), length(v_bench), benchmark_method);
 
-%% Compute errors using interpolation method 
-L_inf_errors = zeros(length(grid_sizes)-1, 1);
-L_inf_rel_errors = zeros(length(grid_sizes)-1, 1);
+%% Compute errors using interpolation method (only if not already computed)
+if ~exist('L_inf_errors', 'var')
+    fprintf('\nComputing error analysis...\n');
+    
+    L_inf_errors = zeros(length(grid_sizes)-1, 1);
+    L_inf_rel_errors = zeros(length(grid_sizes)-1, 1);
 
 fprintf('\nError Analysis (MATLAB interp2 Method):\n');
 fprintf('%-10s %-15s %-15s %-10s %-15s\n', 'Grid', 'L∞ Absolute', 'L∞ Relative', 'Time', 'Method');
 fprintf('%-10s %-15s %-15s %-10s %-15s\n', '----', '-----------', '-----------', '----', '------');
 
  
-
-% Create benchmark grid meshgrid once
-[X_bench, V_bench] = meshgrid(x_bench, v_bench);
 
 for i = 1:length(grid_sizes)-1
     grid_size = grid_sizes(i);
@@ -340,9 +416,77 @@ else
     fprintf('⚠️  Not enough valid data points for regression analysis\n');
 end
 
+end  % End of if ~exist('L_inf_errors', 'var') block
+
 %% Visualizations
 
-% 1. Convergence plot
+% Set default interpreter to avoid LaTeX warnings
+set(0, 'DefaultTextInterpreter', 'none');
+set(0, 'DefaultLegendInterpreter', 'none');
+set(0, 'DefaultAxesTickLabelInterpreter', 'none');
+
+% Publication-quality convergence plot with professional formatting
+fig = figure('Name', 'Grid Convergence Study', 'Position', [100, 100, 800, 600], ...
+             'Units', 'pixels', 'PaperPositionMode', 'auto', 'Color', 'white');
+
+% Set paper size for publication
+set(fig, 'PaperUnits', 'inches', 'PaperSize', [8, 6]);
+
+% Set publication font properties with larger text
+set(0, 'DefaultAxesFontName', 'Times New Roman');
+set(0, 'DefaultTextFontName', 'Times New Roman');
+set(0, 'DefaultAxesFontSize', 24);
+set(0, 'DefaultTextFontSize', 24);
+
+% Calculate grid spacing h = 1/N
+h_values = 1./grid_sizes(1:end-1);
+
+% Professional color scheme
+data_color = [0, 0.4470, 0.7410];      % Blue for data points
+fit_color = [0.8500, 0.3250, 0.0980];  % Red-orange for fit line
+
+% Create the main convergence plot with empty circles
+loglog(h_values, L_inf_errors, 'o', 'LineWidth', 2.5, 'MarkerSize', 12, ...
+       'Color', data_color, 'MarkerFaceColor', 'none', 'MarkerEdgeColor', data_color);
+hold on;
+
+% Add fitted dashed line if available
+if exist('regression_conv_rate', 'var') && ~isnan(regression_conv_rate)
+    error_fit = C_constant * (h_values).^regression_conv_rate;
+    h_fit = loglog(h_values, error_fit, '--', 'LineWidth', 2.5, 'Color', data_color);
+    legend_text = {sprintf('$||f - f^{\\mathrm{NuFi}}||_{\\infty} = \\mathcal{O}(1/N^{\\alpha})$, $\\alpha = %.2f$', regression_conv_rate)};
+    legend(h_fit, legend_text, 'Location', 'southeast', 'FontSize', 24, 'Box', 'on', ...
+           'Interpreter', 'latex');
+else
+    legend('Computed errors', 'Location', 'southeast', 'FontSize', 24, 'Box', 'on');
+end
+
+% Set axis properties with LaTeX formatting
+xlabel('$1/N$', 'Interpreter', 'latex', 'FontSize', 26);
+ylabel('$||f - f^{\mathrm{NuFi}}||_{\infty}$', 'Interpreter', 'latex', 'FontSize', 26);
+
+% Customize x-axis ticks to match the reference image
+xticks(1./[512, 256, 128, 64, 32]);
+xticklabels({'1/512', '1/256', '1/128', '1/64', '1/32'});
+
+% Set axis limits and professional grid
+xlim([1/600, 1/64]);
+ylim([min(L_inf_errors)*0.3, max(L_inf_errors)*3]);
+grid on;
+set(gca, 'GridAlpha', 0.3, 'MinorGridAlpha', 0.1);
+
+% Professional appearance settings
+set(gca, 'FontSize', 24, 'LineWidth', 1.5);
+set(gca, 'XMinorTick', 'on', 'YMinorTick', 'on');
+box on;
+
+% Set background to white
+set(gcf, 'Color', 'white');
+set(gca, 'Color', 'white');
+
+hold off;
+
+% 1. Original multi-panel figure
 figure('Name', sprintf('Grid Convergence Study (%s)', test_case_name), 'Position', [100, 100, 1200, 800]);
 
 subplot(2,3,1);
@@ -425,6 +569,9 @@ results.mean_convergence_rate = mean_conv_rate;
 if exist('regression_conv_rate', 'var')
     results.regression_convergence_rate = regression_conv_rate;
     results.R_squared = R_squared;
+    if exist('C_constant', 'var')
+        results.C_constant = C_constant;
+    end
 end
 results.distribution_functions = distribution_functions;
 results.grid_params = grid_params;
@@ -433,6 +580,48 @@ results_filename = sprintf('convergence_study_results_%s_t%.1f_Nremap%d_%s.mat',
                           test_case_name, target_time, N_remap_value, benchmark_method);
 save(results_filename, 'results');
 fprintf('\nResults saved to %s\n', results_filename);
+
+% Save plots
+plot_filename = sprintf('convergence_study_%s_t%.1f_Nremap%d_%s', ...
+                       test_case_name, target_time, N_remap_value, benchmark_method);
+pub_plot_filename = sprintf('convergence_publication_%s_t%.1f_Nremap%d_%s', ...
+                           test_case_name, target_time, N_remap_value, benchmark_method);
+images_dir = './analysis/images';
+
+% Create analysis/images directory if it doesn't exist
+if ~exist(images_dir, 'dir')
+    mkdir(images_dir);
+    fprintf('Created %s directory\n', images_dir);
+end
+
+% Save publication-quality convergence plot (figure 1)
+figure(1);
+conv_plot_filename = sprintf('convergence_test_%s', test_case_name);
+
+png_path_conv = fullfile(images_dir, [conv_plot_filename '.png']);
+fig_path_conv = fullfile(images_dir, [conv_plot_filename '.fig']);
+eps_path_conv = fullfile(images_dir, [conv_plot_filename '.eps']);
+pdf_path_conv = fullfile(images_dir, [conv_plot_filename '.pdf']);
+
+% High-quality export settings for convergence plot
+print(png_path_conv, '-dpng', '-r300');
+print(eps_path_conv, '-depsc2', '-r300');
+print(pdf_path_conv, '-dpdf', '-r300');
+saveas(gcf, fig_path_conv);
+fprintf('Convergence plot saved as: %s, %s, %s, and %s\n', png_path_conv, eps_path_conv, pdf_path_conv, fig_path_conv);
+
+% Save multi-panel plot (figure 2)
+figure(2);
+png_path_pub = fullfile(images_dir, [pub_plot_filename '.png']);
+fig_path_pub = fullfile(images_dir, [pub_plot_filename '.fig']);
+eps_path_pub = fullfile(images_dir, [pub_plot_filename '.eps']);
+
+% High-quality export settings
+print(png_path_pub, '-dpng', '-r300');
+print(eps_path_pub, '-depsc2', '-r300');
+saveas(gcf, fig_path_pub);
+fprintf('Multi-panel plot saved as: %s, %s, and %s\n', png_path_pub, eps_path_pub, fig_path_pub);
+
 
 % Clean up temporary files
 delete('temp_convergence_config.mat');
@@ -450,6 +639,11 @@ if exist('temp_nufi_results.mat', 'file')
     delete('temp_nufi_results.mat');
 end
 fprintf('Temporary files cleaned up.\n');
+
+% Reset default interpreters
+set(0, 'DefaultTextInterpreter', 'tex');
+set(0, 'DefaultLegendInterpreter', 'tex');
+set(0, 'DefaultAxesTickLabelInterpreter', 'tex');
 
 % Summary
 fprintf('\n=== CONVERGENCE STUDY SUMMARY ===\n');

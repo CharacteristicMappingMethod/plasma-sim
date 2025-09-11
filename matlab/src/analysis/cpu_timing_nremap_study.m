@@ -22,8 +22,8 @@ DEFAULTS
 
 %% Configuration
 fprintf('=== CPU Timing Analysis for CMM N_remap Study ===\n');
-fprintf('Test case: Landau Damping\n');
-fprintf('Time limit: 10.0\n');
+fprintf('Test case: Two Stream Instability\n');
+fprintf('Time limit: 40.0\n');
 fprintf('Method: CMM\n\n');
 
 % Define N_remap values to test
@@ -32,7 +32,7 @@ target_time = 40.0;
 num_tests = length(N_remap_values);
 
 % Define data filename and initialize flag
-data_filename = 'cpu_timing_nremap_landau_damping_Tend40.mat';
+data_filename = 'cpu_timing_nremap_two_stream_Tend40.mat';
 run_simulations = true;  % Default to running simulations
 
 % Check for existing data
@@ -84,8 +84,8 @@ for i = 1:num_tests
     load('temp_cpu_timing_config.mat');
     current_N_remap = N_remap_values(i);
     
-    % Load fresh Landau damping parameters
-    PARAMS_landau_damping;
+    % Load fresh two stream instability parameters
+    PARAMS_two_stream;
     
     % Override specific parameters for this test
     params.method = "CMM";
@@ -153,7 +153,7 @@ end  % End of if run_simulations
 N_remap_values = results.N_remap_values;
 target_time = results.target_time;
 num_tests = length(N_remap_values);
-data_filename = 'cpu_timing_nremap_landau_damping_Tend40.mat';  % Re-define for consistency
+data_filename = 'cpu_timing_nremap_two_stream_Tend10.mat';  % Re-define for consistency
 
 %% Data Processing and Analysis
 fprintf('=== Analysis Summary ===\n');
@@ -169,93 +169,99 @@ fprintf('\n');
 %% Plotting and Visualization
 fprintf('Creating plots...\n');
 
-% Create main figure
-figure('Position', [100, 100, 1200, 800]);
+% Set default interpreter to avoid LaTeX warnings
+set(0, 'DefaultTextInterpreter', 'none');
+set(0, 'DefaultLegendInterpreter', 'none');
+set(0, 'DefaultAxesTickLabelInterpreter', 'none');
 
-% Define colors for different N_remap values
+% Publication-quality plot with professional formatting
+fig = figure('Name', 'CMM N_remap CPU Timing Analysis', 'Position', [100, 100, 1200, 500], ...
+             'Units', 'pixels', 'PaperPositionMode', 'auto', 'Color', 'white');
+
+% Set paper size for publication
+set(fig, 'PaperUnits', 'inches', 'PaperSize', [12, 5]);
+
+% Set publication font properties with larger text
+set(0, 'DefaultAxesFontName', 'Times New Roman');
+set(0, 'DefaultTextFontName', 'Times New Roman');
+set(0, 'DefaultAxesFontSize', 16);
+set(0, 'DefaultTextFontSize', 16);
+
+% Professional color scheme
 colors = lines(num_tests);
 
 % Subplot 1: CPU time per iteration vs simulation time
-subplot(2, 2, 1);
+subplot(1, 2, 1);
 hold on;
-legend_entries = {};
 for i = 1:num_tests
     plot(results.time_arrays{i}, results.cpu_times{i}, ...
-         'Color', colors(i, :), 'LineWidth', 1.5, ...
-         'DisplayName', sprintf('N_{remap} = %d', N_remap_values(i)));
-    legend_entries{end+1} = sprintf('N_{remap} = %d', N_remap_values(i));
+         'Color', colors(i, :), 'LineWidth', 2.5, ...
+         'DisplayName', sprintf('$N_{\\mathrm{remap}} = %d$', N_remap_values(i)));
 end
 hold off;
-xlabel('Simulation Time');
-ylabel('CPU Time per Iteration (s)');
-title('CPU Time per Iteration vs Simulation Time');
-legend('Location', 'best', 'FontSize', 10);
+xlabel('Time $t$', 'Interpreter', 'latex', 'FontSize', 18);
+ylabel('CPU Time per Iteration (s)', 'FontSize', 18);
+title('CPU Time per Iteration vs Simulation Time', 'FontSize', 20, 'FontWeight', 'bold', 'Interpreter', 'latex');
+legend('Location', 'best', 'FontSize', 14, 'Interpreter', 'latex', 'Box', 'on');
 grid on;
+set(gca, 'GridAlpha', 0.3, 'MinorGridAlpha', 0.1);
+set(gca, 'FontSize', 16, 'LineWidth', 1.5);
+set(gca, 'XMinorTick', 'on', 'YMinorTick', 'on');
+box on;
 xlim([0, target_time]);
 
 % Subplot 2: Mean CPU time per iteration for each N_remap
-subplot(2, 2, 2);
-bar(1:num_tests, results.mean_cpu_per_iter, 'FaceColor', [0.2, 0.6, 0.8]);
-xlabel('N_{remap} Value');
-ylabel('Mean CPU Time per Iteration (s)');
-title('Mean CPU Time per Iteration vs N_{remap}');
+subplot(1, 2, 2);
+% Create bars with colors matching the first subplot
+bar_handles = bar(1:num_tests, results.mean_cpu_per_iter, 'EdgeColor', 'k', 'LineWidth', 1.5);
+% Set individual bar colors to match the line plot colors
+for i = 1:num_tests
+    bar_handles.FaceColor = 'flat';
+    bar_handles.CData(i,:) = colors(i,:);
+end
+xlabel('$N_{\mathrm{remap}}$', 'Interpreter', 'latex', 'FontSize', 18);
+ylabel('Mean CPU Time per Iteration (s)', 'FontSize', 18);
+title('Mean CPU Time per Iteration vs $N_{\mathrm{remap}}$', 'FontSize', 20, 'FontWeight', 'bold', 'Interpreter', 'latex');
 set(gca, 'XTick', 1:num_tests, 'XTickLabel', N_remap_values);
 grid on;
-for i = 1:num_tests
-    text(i, results.mean_cpu_per_iter(i) + max(results.mean_cpu_per_iter)*0.02, ...
-         sprintf('%.4f', results.mean_cpu_per_iter(i)), ...
-         'HorizontalAlignment', 'center', 'FontSize', 9);
+set(gca, 'GridAlpha', 0.3, 'MinorGridAlpha', 0.1);
+set(gca, 'FontSize', 16, 'LineWidth', 1.5);
+set(gca, 'XMinorTick', 'on', 'YMinorTick', 'on');
+box on;
+
+% Main title removed as requested
+
+% Set background to white
+set(gcf, 'Color', 'white');
+set(gca, 'Color', 'white');
+
+% Save plots with professional quality
+plot_filename = 'cpu_timing_nremap_two_stream';
+images_dir = './images';
+
+% Create images directory if it doesn't exist
+if ~exist(images_dir, 'dir')
+    mkdir(images_dir);
+    fprintf('Created %s directory\n', images_dir);
 end
 
-% Subplot 3: Total CPU time for each simulation
-subplot(2, 2, 3);
-bar(1:num_tests, results.total_cpu_time, 'FaceColor', [0.8, 0.4, 0.2]);
-xlabel('N_{remap} Value');
-ylabel('Total CPU Time (s)');
-title('Total CPU Time vs N_{remap}');
-set(gca, 'XTick', 1:num_tests, 'XTickLabel', N_remap_values);
-grid on;
-for i = 1:num_tests
-    text(i, results.total_cpu_time(i) + max(results.total_cpu_time)*0.02, ...
-         sprintf('%.1f', results.total_cpu_time(i)), ...
-         'HorizontalAlignment', 'center', 'FontSize', 9);
-end
+% High-quality export settings
+png_path = fullfile(images_dir, [plot_filename '.png']);
+fig_path = fullfile(images_dir, [plot_filename '.fig']);
+eps_path = fullfile(images_dir, [plot_filename '.eps']);
+pdf_path = fullfile(images_dir, [plot_filename '.pdf']);
 
-% Subplot 4: CPU efficiency (iterations per second)
-subplot(2, 2, 4);
-iterations_per_second = 1 ./ results.mean_cpu_per_iter;
-bar(1:num_tests, iterations_per_second, 'FaceColor', [0.2, 0.8, 0.4]);
-xlabel('N_{remap} Value');
-ylabel('Iterations per Second');
-title('Computational Efficiency vs N_{remap}');
-set(gca, 'XTick', 1:num_tests, 'XTickLabel', N_remap_values);
-grid on;
-for i = 1:num_tests
-    text(i, iterations_per_second(i) + max(iterations_per_second)*0.02, ...
-         sprintf('%.1f', iterations_per_second(i)), ...
-         'HorizontalAlignment', 'center', 'FontSize', 9);
-end
+% Save in multiple formats for publication
+print(png_path, '-dpng', '-r300');
+print(eps_path, '-depsc2', '-r300');
+print(pdf_path, '-dpdf', '-r300');
+saveas(gcf, fig_path);
 
-% Add main title
-sgtitle('CMM N_{remap} CPU Timing Analysis - Landau Damping Case', 'FontSize', 16, 'FontWeight', 'bold');
-
-% Optional: Save the plot (create directory if needed)
-plot_filename = 'cpu_timing_nremap_landau_damping';
-try
-    % Try to save to images directory
-    if ~exist('./images', 'dir')
-        mkdir('./images');
-        fprintf('Created ./images directory\n');
-    end
-    saveas(gcf, ['./images/' plot_filename '.png']);
-    saveas(gcf, ['./images/' plot_filename '.fig']);
-    fprintf('Plot saved as: ./images/%s.png and ./images/%s.fig\n', plot_filename, plot_filename);
-catch
-    % If that fails, save to current directory
-    saveas(gcf, [plot_filename '.png']);
-    saveas(gcf, [plot_filename '.fig']);
-    fprintf('Plot saved to current directory as: %s.png and %s.fig\n', plot_filename, plot_filename);
-end
+fprintf('Professional plots saved as:\n');
+fprintf('  PNG: %s\n', png_path);
+fprintf('  EPS: %s\n', eps_path);
+fprintf('  PDF: %s\n', pdf_path);
+fprintf('  FIG: %s\n', fig_path);
 
 %% Final Summary
 fprintf('\n=== Final Summary ===\n');
@@ -277,3 +283,8 @@ fprintf('Speed ratio (slowest/fastest): %.2fx\n', ...
 
 fprintf('\nPlots and data have been saved to the analysis directory.\n');
 fprintf('Analysis complete!\n');
+
+% Reset default interpreters
+set(0, 'DefaultTextInterpreter', 'tex');
+set(0, 'DefaultLegendInterpreter', 'tex');
+set(0, 'DefaultAxesTickLabelInterpreter', 'tex');
