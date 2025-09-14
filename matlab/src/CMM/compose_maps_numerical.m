@@ -27,7 +27,6 @@ current_numeric_v = grid.V;
 
 % Apply each map in reverse order using interpolation
 for i = N_maps:-1:1
-    fprintf('Applying Map%d numerically...\n', i);
     
     % Get current map's displacement field
     Delta_X = Maps(:,:,1,i) - grid.X;

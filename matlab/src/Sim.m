@@ -54,7 +54,7 @@ function [params,data] = Sim(params)
             data = save_config(params,data,fs,Nsamples);
         end
 
-        fprintf("iter: %d, time: %.1f, dt: %.2f\n",iT, time, params.dt)
+        fprintf("iter: %d, time: %.1f, dt: %.2f \n",iT, time, params.dt)
         % Check if simulation end time is reached
         if time >= params.Tend
             % Trim arrays to actual size

@@ -20,14 +20,20 @@ for s = 1:params.Ns
     Ekin = 0.5 * sum(f .* (Vgrid.^2), "all") * grid.dx * grid.dv;
     Etot = Epot + Ekin;
     L2norm = sum(abs(f).^2, "all") * grid.dx * grid.dv;
-
+    
+    if isfield(params, 'incomp_error')
+        incomp_error = params.incomp_error(s,iT);
+    else
+        incomp_error = 0;
+    end
+incomp_error
     % Create a filename for the species
     species_name = params.species_name(s); % Species name
     filename = fullfile(params.data_dir, species_name+".csv");
 
     % Create a table row for the current measurement
-    new_row = table(iT, time, Mass, Momentum, Epot, Ekin, Etot, L2norm, ...
-        'VariableNames', {'it','time','Mass', 'Momentum', 'Epot', 'Ekin', 'Etot', 'L2norm'});
+    new_row = table(iT, time, Mass, Momentum, Epot, Ekin, Etot, L2norm, incomp_error, ...
+        'VariableNames', {'it','time','Mass', 'Momentum', 'Epot', 'Ekin', 'Etot', 'L2norm', 'incomp_error'});
 
     % Check if the file already exists
     if exist(filename, 'file') && iT>1

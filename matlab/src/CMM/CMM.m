@@ -38,6 +38,12 @@ function [fs, params] = CMM(params, fs)
                                 params.charge(s)/params.Mass(s)*params.Efield_list, ...
                                 params.grids(s), "CMM", params);
 
+        [detJ, ~, ~, ~, ~] = jacobian_determinant(X, V, params.grids(s));
+        
+        % we multiply with the weighting function to not count for
+        % incompressibility errors on the periodified edges which are very
+        % distored
+        params.incomp_error(s,iT)=max(abs(detJ(:)-1).*params.grids(s).Weights(:));
         % Compose with existing maps
         [Xstar, Vstar] = wrap_compose(params, params.grids(s), ...
                                      squeeze(params.Map_stack(:,:,:,s,:)), X, V);

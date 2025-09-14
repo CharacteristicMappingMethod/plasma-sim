@@ -28,7 +28,9 @@ function [grid] = make_periodic_grid(Lx,Lv,Nx,Nv)
     % periodic flow velocity
     [vper,sigma] = velocity_periodicfication(grid);
     [~,Vperiodic] = meshgrid(x,vper);
+    [~,Weights] = meshgrid(x,abs(sigma)<1e-12);
     grid.Vperiodic = Vperiodic;
+    grid.Weights = Weights;
     
 end
 

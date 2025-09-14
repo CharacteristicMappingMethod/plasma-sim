@@ -1,4 +1,4 @@
-function [v_periodic,sigma] = velocity_periodicfication(params, bump_transition_width, type)
+function [v_periodic, weights] = velocity_periodicfication(params, bump_transition_width, type)
 
 if (nargin <2 || isempty(bump_transition_width))
     b = 0.2*params.Lv;
@@ -29,6 +29,7 @@ elseif type == "exp"
     Lv = params.Lv;
     b = 0.2*Lv;
     sigma = 1 - nu((abs(params.v)-Lv)/b);
+    weights = nu((abs(params.v)-Lv)/b);
 else
     assert(1,"type: "+ type + " not known.")
 end
