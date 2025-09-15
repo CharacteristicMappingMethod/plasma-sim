@@ -2,7 +2,7 @@ function [fs, params] = NuFi(params,fs)
 iT = params.it+1;
 dt = params.dt;
 for s = 1:params.Ns
-    [X,V] = sympl_flow_Half(iT,dt,params.grids(s).X,params.grids(s).V,params.charge(s)/params.Mass(s)*params.Efield_list,params.grids(s));
+    [X,V] = sympl_flow_Half(iT,dt,params.grids(s).X,params.grids(s).V,params.charge(s)/params.Mass(s)*params.Efield_list,params.grids(s),params);
     fini = params.fini{s};
     fs(:,:,s) = fini(X,V);
 end
@@ -17,33 +17,43 @@ end
 
 
 
-function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid)
-mint="lagrange";
-order = 4; % lagrange interpolation order
-if n == 1
-    return;
-end
+function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, params)
+% Symplectic flow for half time step in NuFi method
+%
+% This function applies a symplectic flow to advance particle positions
+% and velocities for n-1 full steps plus one half step.
+%
+% Inputs:
+%   n      - Number of steps
+%   dt     - Time step size
+%   X, V   - Position and velocity arrays
+%   Efield - Electric field array
+%   grid   - Grid structure
+%   params - Parameters structure
+%
+% Outputs:
+%   X, V   - Updated position and velocity arrays
 
-
-periodic = @(x) mod(x,grid.Lx-grid.dx);
-
-while n > 2
-    n = n - 1;
-    X = X - dt * V;  % Inverse signs; going backwards in time
-    if mint=="lagrange"
-        V = V + dt *reshape(lagrange1d_local_interp_periodic(reshape(X,[],1),grid.x,Efield(:,n),order),grid.size);
-    else
-        V = V + dt *reshape(interp1(grid.x,Efield(:,n),reshape(periodic(X),[],1),mint),grid.size);
+    % Return early if n=1 (no flow needed)
+    if n == 1
+        return;
     end
 
-end
+    % Set up velocity field (NuFi method: velocity field is just V)
+    Ux = @(X,V) V;
+    
+    % Set up acceleration field using get_Efield
+    Uv = @(X,V,E) -reshape(get_Efield(params, E(:), X(:)), grid.size);
 
-X = X - dt * V;
-if mint=="lagrange"
-    V = V + (dt / 2) *reshape(lagrange1d_local_interp_periodic(reshape(X,[],1),grid.x,Efield(:,1),order),grid.size);
-else
-    V = V + (dt / 2) *reshape(interp1(grid.x,Efield(:,1),reshape(periodic(X),[],1),mint),grid.size);
-end
+    % Apply symplectic flow
+    while n > 2
+        n = n - 1;
+        X = X - dt * Ux(X,V);  % Position update (inverse signs for backward flow)
+        V = V - dt * Uv(X,V,Efield(:,n));  % Velocity update
+    end
 
+    % Final half step
+    X = X - dt * Ux(X,V);
+    V = V - (dt / 2) * Uv(X,V,Efield(:,1));
 end
 

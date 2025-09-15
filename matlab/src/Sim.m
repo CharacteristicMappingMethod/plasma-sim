@@ -124,9 +124,12 @@ function plot_results(params, fs)
         ylabel("$v$");
     end
 
+    % Get electric field adds external Efield
+    Efield = get_Efield(params, params.Efield, params.grids(1).x);
+
     % Plot electric field
     subplot(params.Ns+1, 1, params.Ns+1);
-    plot(params.grids(1).x, params.Efield);
+    plot(params.grids(1).x, Efield);
     xlim([params.grids(1).x(1), params.grids(1).x(end)]);
     subtitle("$E$");
     colorbar();

@@ -1,7 +1,6 @@
 function [fs,params] = predictor_corrector(params,fs)
 
 dt = params.dt;
-iT = params.it + 1;
 
 % Species indices
 s_elec = find(params.species_name == "electrons");
@@ -11,27 +10,27 @@ s_ion  = find(params.species_name == "ions");
 charge = params.charge;
 mass   = params.Mass;
 grids  = params.grids;
-iT = params.it+1;
 
 % Compute electric field
 [Efield] = vPoisson(fs, params.grids, params.charge);
+Efield_tot = Efield + compute_external_Efield(params, params.grids(1).x, params.time_array(end));
 
-% Advect distribution functions for half time step
+% Advect distribution functions for haEfield = Efield + params.E_ext(params.grids(1).x, params.time_array(end));
+lf time step
 for s = 1:params.Ns
-    f12(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield, params.grids(s), params.dt / 2);
+    f12(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield_tot, params.grids(s), params.dt / 2);
 end
 
 % Recompute electric field
 [Efield] = vPoisson(f12, params.grids, params.charge);
-
+Efield_tot = Efield + compute_external_Efield(params, params.grids(1).x, params.time_array(end)+params.dt/2);
 % Advect distribution functions for full time step
 for s = 1:params.Ns
-    fs(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield, params.grids(s), params.dt);
+    fs(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield_tot, params.grids(s), params.dt);
 end
 
 % save electric field;
 params.Efield = Efield;
-params.Efield_list(:,iT) = Efield;
 
 
 end

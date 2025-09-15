@@ -3,7 +3,7 @@ params.mycase = "two_stream";          % "two_stream"
 params.Nx = 2^8;                            % Number of spatial grid points
 params.Nv = 2^8;                            % Number of velocity grid points
 params.Ns = 1;                              % Number of species (electrons and ions)
-params.N_remap = 10;
+params.N_remap = 20;
 params.method="predcorr";
 %params.dt_adapt_tolerance = 0.1;            % realtive error allowed during time integration
 %params.dt_interv = [1/100, 1];
@@ -29,3 +29,8 @@ params.Lv = 5 * pi; % Velocity domain lengths for each species
 params.f0 = @(x, v) (1 + params.eps*cos(params.k*x)) ./(2*sqrt(2*pi)).*(exp(-(v-params.v0).^2/2)+exp(-(v+params.v0).^2/2));
 params.fini = {params.f0};
 
+% Interpolation parameters
+opts.scheme = 'lagrange-bary';
+opts.order = 3;
+opt.use_mex = true;
+params.opt_interp = opts;

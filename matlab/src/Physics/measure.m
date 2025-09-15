@@ -26,7 +26,6 @@ for s = 1:params.Ns
     else
         incomp_error = 0;
     end
-incomp_error
     % Create a filename for the species
     species_name = params.species_name(s); % Species name
     filename = fullfile(params.data_dir, species_name+".csv");

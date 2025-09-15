@@ -68,6 +68,12 @@ if ~isfield(params, 'data_dir')
     params.data_dir= root + "/data/" + params.mycase+"_Tend"+num2str(params.Tend)+"_"+params.method+"/";
 end
 
+% default interpolation parameters
+if ~isfield(params, 'opt_interp')
+    params.opt_interp = struct('scheme', 'lagrange-bary', 'order', 3, 'use_mex', true);
+end
+
+
 if ~exist(params.data_dir, 'dir')
     mkdir(params.data_dir);
 end

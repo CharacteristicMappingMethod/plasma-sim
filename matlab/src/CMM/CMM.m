@@ -91,45 +91,23 @@ function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, method, params)
 %
 % Outputs:
 %   X, V   - Updated position and velocity arrays
-
-    mint = "lagrange";
-    order = 3;
-
+    opts = params.opt_interp;
     % Return early if n=1 (no flow needed)
     if n == 1
         return;
     end
 
-    % Periodic boundary function
-    periodic = @(x) mod(x, grid.Lx - grid.dx);
-
     % Set up velocity field based on method
     if method == "CMM"
         Vperiodic = grid.Vperiodic;
-        if mint == "lagrange"
-            % Lagrange interpolation for velocity field
-            Ux = @(X,V) reshape(lagrange2d_local_interp_periodic(X, V+grid.Lv, ...
-                                                               grid.x, grid.v+grid.Lv, ...
-                                                               Vperiodic, order), grid.size);
-        else
-            % Standard interpolation for velocity field
-            Ux = @(X,V) interp2(grid.X, grid.V, Vperiodic, periodic(X), V, mint);
-        end
+        Ux = @(X,V)interp2d_periodic(X, V+grid.Lv, grid.x, grid.v+grid.Lv, Vperiodic, opts); % all coordinates must be rescaled to [0,2pi]
     else
         % NuFi method: velocity field is just V
         Ux = @(X,V) V;
     end
 
     % Set up acceleration field
-    if mint == "lagrange"
-        % Lagrange interpolation for acceleration field
-        Uv = @(X,V,E) -reshape(lagrange1d_local_interp_periodic(reshape(X,[],1), ...
-                                                               grid.x, E(:), order), grid.size);
-    else
-        % Standard interpolation for acceleration field
-        Uv = @(X,V,E) -reshape(interp1(grid.x, E, reshape(periodic(X),[],1), mint), grid.size);
-    end
-
+    Uv = @(X,V,E) -reshape(get_Efield(params, E(:), X(:)), grid.size);
     % Apply symplectic flow based on number of maps
     if params.Nmaps == 0
       
