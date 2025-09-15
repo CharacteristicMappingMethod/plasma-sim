@@ -11,10 +11,11 @@ DEFAULTS
 PARAMS_two_stream;
 %PARAMS_landau_damping;
 %PARAMS_ion_acoustic_waves;
+PARAMS_keen_waves_canonical;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% simulate
 tic()
-params.method = "CMM";
+params.method = "predcorr";
 [params1, data] = Sim(params);
 t(1) = toc()
 

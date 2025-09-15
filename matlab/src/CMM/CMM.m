@@ -70,6 +70,11 @@ function [fs, params] = CMM(params, fs)
 
     % Update electric field for current step
     [Efield] = vPoisson(fs, params.grids, params.charge);
+    
+    % Add external field if defined
+    Efield = Efield + compute_external_Efield(params, params.grids(1).x, params.time + dt);
+    
+    
     params.Efield = Efield;
     params.Efield_list(:,N_nufi) = Efield;
 end
@@ -106,9 +111,10 @@ function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, method, params)
         Ux = @(X,V) V;
     end
 
-    % Set up acceleration field
-    Uv = @(X,V,E) -reshape(get_Efield(params, E(:), X(:)), grid.size);
+    % Set up acceleration field using direct interpolation
+    Uv = @(X,V,E) -reshape(interp1d_periodic(X(:), params.grids(1).x, E(:), params.opt_interp), grid.size);
     % Apply symplectic flow based on number of maps
+    
     if params.Nmaps == 0
       
         while n > 2
@@ -124,6 +130,7 @@ function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, method, params)
         
         while n > 1
             n = n - 1;
+            t_nufi = t_nufi - dt; 
             X = X - dt * Ux(X,V);  
             V = V - dt * Uv(X,V,Efield(:,n)); 
         end

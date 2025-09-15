@@ -13,20 +13,19 @@ grids  = params.grids;
 
 % Compute electric field
 [Efield] = vPoisson(fs, params.grids, params.charge);
-Efield_tot = Efield + compute_external_Efield(params, params.grids(1).x, params.time_array(end));
+Efield = Efield + compute_external_Efield(params, params.grids(1).x, params.time);
 
-% Advect distribution functions for haEfield = Efield + params.E_ext(params.grids(1).x, params.time_array(end));
-lf time step
+% Advect distribution functions for half time step
 for s = 1:params.Ns
-    f12(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield_tot, params.grids(s), params.dt / 2);
+    f12(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield, params.grids(s), params.dt / 2);
 end
 
 % Recompute electric field
 [Efield] = vPoisson(f12, params.grids, params.charge);
-Efield_tot = Efield + compute_external_Efield(params, params.grids(1).x, params.time_array(end)+params.dt/2);
+Efield = Efield + compute_external_Efield(params, params.grids(1).x, params.time+params.dt/2);
 % Advect distribution functions for full time step
 for s = 1:params.Ns
-    fs(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield_tot, params.grids(s), params.dt);
+    fs(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield, params.grids(s), params.dt);
 end
 
 % save electric field;

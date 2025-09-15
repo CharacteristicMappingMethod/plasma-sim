@@ -17,6 +17,7 @@ function [params,data] = Sim(params)
     % Plot initial conditions
     params.Efield = vPoisson(fs,params.grids,params.charge);
     params.Efield_list(:,1) = params.Efield;
+    params.time = 0;
 
     % Initialize CPU timing arrays
     params.tcpu = zeros(params.Nt_max, 1);
@@ -37,6 +38,7 @@ function [params,data] = Sim(params)
 
         % Increase time
         time = time + params.dt;
+        params.time = time;
         params.time_array(iT) = time;
 
         % Measurements
@@ -124,8 +126,8 @@ function plot_results(params, fs)
         ylabel("$v$");
     end
 
-    % Get electric field adds external Efield
-    Efield = get_Efield(params, params.Efield, params.grids(1).x);
+    % Get electric field with external field added
+    Efield = params.Efield;
 
     % Plot electric field
     subplot(params.Ns+1, 1, params.Ns+1);

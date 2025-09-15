@@ -6,7 +6,10 @@ for s = 1:params.Ns
     fini = params.fini{s};
     fs(:,:,s) = fini(X,V);
 end
+% Compute electric field
 [Efield] =vPoisson(fs,params.grids,params.charge);
+% Add external field
+Efield = Efield + compute_external_Efield(params, params.grids(1).x, params.time + dt);
 params.Efield = Efield;
 params.Efield_list(:,iT) = Efield;
 
@@ -42,8 +45,8 @@ function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, params)
     % Set up velocity field (NuFi method: velocity field is just V)
     Ux = @(X,V) V;
     
-    % Set up acceleration field using get_Efield
-    Uv = @(X,V,E) -reshape(get_Efield(params, E(:), X(:)), grid.size);
+    % Set up acceleration field using direct interpolation
+    Uv = @(X,V,E) -reshape(interp1d_periodic(X(:), params.grids(1).x, E(:), params.opt_interp), grid.size);
 
     % Apply symplectic flow
     while n > 2
