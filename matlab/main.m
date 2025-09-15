@@ -15,7 +15,7 @@ PARAMS_keen_waves_canonical;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% simulate
 tic()
-params.method = "predcorr";
+params.method = "CMM";
 [params1, data] = Sim(params);
 t(1) = toc()
 
