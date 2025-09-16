@@ -32,5 +32,5 @@ params.fini = {params.f0};
 % Interpolation parameters
 opts.scheme = 'lagrange-bary';
 opts.order = 3;
-opt.use_mex = true;
+opts.use_mex = true;
 params.opt_interp = opts;
