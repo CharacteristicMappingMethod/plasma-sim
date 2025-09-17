@@ -1,9 +1,9 @@
 params = struct();
 params.mycase = "keen_waves_weak";          % "keen_waves_weak"
-params.Nx = 2^8;                            % Number of spatial grid points
-params.Nv = 2^8;                            % Number of velocity grid points
+params.Nx = 2^9;                            % Number of spatial grid points
+params.Nv = 2^9;                            % Number of velocity grid points
 params.Ns = 1;                              % Number of species (electrons only)
-params.N_remap = 20;
+params.N_remap = 40;
 params.method="CMM";
 %params.dt_adapt_tolerance = 0.1;            % realtive error allowed during time integration
 %params.dt_interv = [1/100, 1];
@@ -12,9 +12,9 @@ params.Mr = 1;                           % Mass ratio
 params.Mass = [1];               % Mass of species
 params.charge = [-1];                    % Charge of species
 params.Nt_max = 200000;                    % Maximum number of time steps
-params.dt = 0.25;                          % Time step size
+params.dt = 0.5;                          % Time step size
 params.dt_save = 200;                      % Save after dt_save time
-params.Tend = 5000;                        % End time of simulation
+params.Tend = 2000;                        % End time of simulation
 
 % Keen waves parameters from paper (weak drive)
 params.kDr = 0.26;                          % Drive wave number

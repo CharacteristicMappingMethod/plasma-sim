@@ -13,7 +13,7 @@ params.Mass = [1];               % Mass of species
 params.charge = [-1];                    % Charge of species
 params.Nt_max = 100000;                     % Maximum number of time steps
 params.dt = 1;                          % Time step size
-params.dt_save = 100;                      % Save after dt_save time
+params.dt_save = 50;                      % Save after dt_save time
 params.Tend = 1000;                        % End time of simulation
 
 % Keen waves parameters from paper

@@ -130,7 +130,6 @@ function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, method, params)
         
         while n > 1
             n = n - 1;
-            t_nufi = t_nufi - dt; 
             X = X - dt * Ux(X,V);  
             V = V - dt * Uv(X,V,Efield(:,n)); 
         end
