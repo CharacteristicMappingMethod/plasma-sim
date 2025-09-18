@@ -16,6 +16,22 @@ function [grid] = make_periodic_grid(Lx,Lv,Nx,Nv)
     grid.Lx = Lx;grid.Lv = Lv;
     grid.Nx = Nx;grid.Nv = Nv;
 
+
+    % Create finite difference operators
+    % Create 2nd order central difference operators
+    grid.Dx = spdiags(ones(Nx,1)*[-1,0,1], [-1,0,1], Nx, Nx);
+    grid.Dv = spdiags(ones(Nv,1)*[-1,0,1], [-1,0,1], Nv, Nv);
+
+    % Apply periodic boundary conditions
+    grid.Dx(1,end) = -1;  % Connect first and last points
+    grid.Dx(end,1) = 1;
+    grid.Dv(1,end) = -1;
+    grid.Dv(end,1) = 1;
+
+    % Scale by grid spacing
+    grid.Dx = grid.Dx / (2*dx);
+    grid.Dv = grid.Dv / (2*dv);
+    
     grid.size = size(X);
     grid.dom = [0, -Lv, Lx-dx, Lv-dv];
     

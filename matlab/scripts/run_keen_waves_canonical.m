@@ -1,13 +1,13 @@
 % Run canonical drive Keen waves simulation and analyze results
-clear; clc; close all;
+clear all; clc; close all;
 
 
 % Add paths
 addpath(genpath('../src/'),genpath('../params/'),"../");
 DEFAULTS
 % Load canonical drive parameters
-drive = "canonical";
-if drive == "weak"
+drive = "weak";
+if drive == "canonical  "
     PARAMS_keen_waves_canonical;
 else
     PARAMS_keen_waves_weak;
@@ -25,7 +25,7 @@ if exist(data_file, 'file') && start_from_existing
     time_final = data.time(end);
     fprintf('Data loaded successfully!\n');
 else
-    fprintf('Starting Keen waves canonical drive simulation...\n');
+    fprintf("Starting Keen waves "+ drive+ "  drive simulation...\n");
     
     % Run simulation
     tic;

@@ -5,6 +5,7 @@ for s = 1:params.Ns
     [X,V] = sympl_flow_Half(iT,dt,params.grids(s).X,params.grids(s).V,params.charge(s)/params.Mass(s)*params.Efield_list,params.grids(s),params);
     fini = params.fini{s};
     fs(:,:,s) = fini(X,V);
+    [detJ, ~, ~, ~, ~] = jacobian_determinant(X, V, params.grids(s), "FD");
 end
 % Compute electric field
 [Efield] =vPoisson(fs,params.grids,params.charge);
