@@ -52,7 +52,7 @@ end
         
         % Compute Jacobian determinant
         detJ = (dXdx+1) .* (dVdv+1) - dXdv .* dVdx;
-        fprintf("max(abs(detJ(:)-1)) = %3.2e\n", max(abs(detJ(:)-1)))
+        %fprintf("max(abs(log(detJ(:)))) = %3.2e\n", max(abs(log(detJ(:)))))
     elseif method == "FD"
         % 1. ∂X/∂x: differentiate X with respect to x (along columns)
         dXdx = grid.Dx*X;
@@ -68,21 +68,10 @@ end
         
         % Compute Jacobian determinant
         detJ = (dXdx) .* (dVdv) - dXdv .* dVdx;
-        detJ = detJ(2:end-1,2:end-1);
-        fprintf("max(abs(detJ2(:)-1)) = %3.2e\n", max(abs(detJ(:)-1)))
+        detJ2 = detJ(2:end-1,2:end-1);
+        %fprintf("max(abs(log(detJ2(:)))) = %3.2e\n", max(abs(log(detJ2(:)))))
     end
-    
-    % Optional: Check for negative determinants (non-physical)
-    if any(detJ(:) < 0)
-     %   warning('Negative Jacobian determinants detected! Map may not be orientation-preserving.');
-    end
-    
-    % Optional: Check for very small determinants (near-singular map)
-    min_det = min(detJ(:));
-    if min_det < 1e-10
-      %  warning('Very small Jacobian determinants detected (min = %.2e). Map may be near-singular.', min_det);
-    end
-    
+       
 end
 
 function df = finite_difference(f, L, dim)

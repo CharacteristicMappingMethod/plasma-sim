@@ -73,6 +73,12 @@ if ~isfield(params, 'opt_interp')
     params.opt_interp = struct('scheme', 'lagrange-bary', 'order', 3, 'use_mex', true);
 end
 
+if ~isfield(params, 'incomp_error_threshold')
+    params.incomp_error_threshold = 1e+10;
+else
+    params.N_remap = params.Nt_max; % if incomp_error_threshold is set, remapping parameter is set to Nt_max to avoid "manual" remapping
+end
+
 
 if ~exist(params.data_dir, 'dir')
     mkdir(params.data_dir);

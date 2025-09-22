@@ -55,8 +55,13 @@ function [params,data] = Sim(params)
             Nsamples = Nsamples + 1;
             data = save_config(params,data,fs,Nsamples);
         end
-
-        fprintf("iter: %d, time: %.1f, dt: %.2f \n",iT, time, params.dt)
+        
+        if params.method == "CMM"
+            fprintf("iter: %d, time: %.1f, dt: %.2f, incomp_error: %.2e Nmaps: %d\n",iT, time, params.dt, params.max_incomp_error, params.Nmaps)
+        else
+            fprintf("iter: %d, time: %.1f, dt: %.2f \n",iT, time, params.dt)
+        end
+        
         % Check if simulation end time is reached
         if time >= params.Tend
             % Trim arrays to actual size

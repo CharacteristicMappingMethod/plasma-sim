@@ -12,71 +12,73 @@ function [fs, params] = CMM(params, fs)
 %   fs     - Updated distribution function
 %   params - Updated parameters structure
 
-    iT = params.it;
-    dt = params.dt;
-    N_remap = params.N_remap;
+iT = params.it;
+dt = params.dt;
+N_remap = params.N_remap;
 
-    % Persistent counter for N_nufi that increments across function calls
-    persistent N_nufi;
-   if isempty(N_nufi)
-        N_nufi = 1;
-    end
-   % Increment N_nufi counter
-      N_nufi = N_nufi + 1;
-    % Initialize coordinate maps storage if not exists
-    if ~isfield(params, 'coordinate_maps')
-        params.coordinate_maps.X = zeros(params.grids(1).size(1), params.grids(1).size(2), params.Ns);
-        params.coordinate_maps.V = zeros(params.grids(1).size(1), params.grids(1).size(2), params.Ns);
-    end
+% Persistent counter for N_nufi that increments across function calls
+persistent N_nufi;
+if isempty(N_nufi)
+    N_nufi = 1;
+end
+% Increment N_nufi counter
+N_nufi = N_nufi + 1;
+% Initialize coordinate maps storage if not exists
+if ~isfield(params, 'coordinate_maps')
+    params.coordinate_maps.X = zeros(params.grids(1).size(1), params.grids(1).size(2), params.Ns);
+    params.coordinate_maps.V = zeros(params.grids(1).size(1), params.grids(1).size(2), params.Ns);
+end
 
 
-    % Loop over all particle species
-    for s = 1:params.Ns
+% Loop over all particle species
+for s = 1:params.Ns
 
-        % Apply symplectic flow for half step
-        [X, V] = sympl_flow_Half(N_nufi, dt, params.grids(s).X, params.grids(s).V, ...
-                                params.charge(s)/params.Mass(s)*params.Efield_list, ...
-                                params.grids(s), "CMM", params);
+    % Apply symplectic flow for half step
+    [X, V] = sympl_flow_Half(N_nufi, dt, params.grids(s).X, params.grids(s).V, ...
+        params.charge(s)/params.Mass(s)*params.Efield_list, ...
+        params.grids(s), "CMM", params);
 
-        [detJ, ~, ~, ~, ~] = jacobian_determinant(X, V, params.grids(s));
-        
-        % we multiply with the weighting function to not count for
-        % incompressibility errors on the periodified edges which are very
-        % distored
-        params.incomp_error(s,iT)=max(abs(detJ(:)-1).*params.grids(s).Weights(:));
-        % Compose with existing maps
-        [Xstar, Vstar] = wrap_compose(params, params.grids(s), ...
-                                     squeeze(params.Map_stack(:,:,:,s,:)), X, V);
+    [detJ, ~, ~, ~, ~] = jacobian_determinant(X, V, params.grids(s));
 
-        % Store coordinate maps for analysis
-        params.coordinate_maps.X(:,:,s) = Xstar;
-        params.coordinate_maps.V(:,:,s) = Vstar;
+    % we multiply with the weighting function to not count for
+    % incompressibility errors on the periodified edges which are very
+    % distored
+    params.incomp_error(s)=max(abs(log(detJ(:))).*params.grids(s).Weights(:));
+    % Compose with existing maps
+    [Xstar, Vstar] = wrap_compose(params, params.grids(s), ...
+        squeeze(params.Map_stack(:,:,:,s,:)), X, V);
 
-        % Evaluate initial condition at new positions
-        fini = params.fini{s};
-        fs(:,:,s) = fini(Xstar, Vstar);
-    end
-            % Perform remapping at specified intervals
-        if mod(iT, N_remap) == 0
-            % Add current map to stack
-            Nmaps = params.Nmaps + 1;
-            params.Map_stack(:,:,1,s,Nmaps) = X;
-            params.Map_stack(:,:,2,s,Nmaps) = V;
-            params.Nmaps = Nmaps;
+    % Store coordinate maps for analysis
+    params.coordinate_maps.X(:,:,s) = Xstar;
+    params.coordinate_maps.V(:,:,s) = Vstar;
 
-            % Reset N_nufi counter after remapping
-            N_nufi = 1;
-        end
+    % Evaluate initial condition at new positions
+    fini = params.fini{s};
+    fs(:,:,s) = fini(Xstar, Vstar);
+end
 
-    % Update electric field for current step
-    [Efield] = vPoisson(fs, params.grids, params.charge);
-    
-    % Add external field if defined
-    Efield = Efield + compute_external_Efield(params, params.grids(1).x, params.time + dt);
-    
-    
-    params.Efield = Efield;
-    params.Efield_list(:,N_nufi) = Efield;
+params.max_incomp_error = max(params.incomp_error);
+% Perform remapping at specified intervals
+if mod(iT, N_remap) == 0 || params.max_incomp_error > params.incomp_error_threshold
+    % Add current map to stack
+    Nmaps = params.Nmaps + 1;
+    params.Map_stack(:,:,1,s,Nmaps) = X;
+    params.Map_stack(:,:,2,s,Nmaps) = V;
+    params.Nmaps = Nmaps;
+
+    % Reset N_nufi counter after remapping
+    N_nufi = 1;
+end
+
+% Update electric field for current step
+[Efield] = vPoisson(fs, params.grids, params.charge);
+
+% Add external field if defined
+Efield = Efield + compute_external_Efield(params, params.grids(1).x, params.time + dt);
+
+
+params.Efield = Efield;
+params.Efield_list(:,N_nufi) = Efield;
 end
 
 function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, method, params)
@@ -96,42 +98,42 @@ function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, method, params)
 %
 % Outputs:
 %   X, V   - Updated position and velocity arrays
-    opts = params.opt_interp;
-    % Return early if n=1 (no flow needed)
-    if n == 1
-        return;
+opts = params.opt_interp;
+% Return early if n=1 (no flow needed)
+if n == 1
+    return;
+end
+
+% Set up velocity field based on method
+if method == "CMM"
+    Vperiodic = grid.Vperiodic;
+    Ux = @(X,V)interp2d_periodic(X, V+grid.Lv, grid.x, grid.v+grid.Lv, Vperiodic, opts); % all coordinates must be rescaled to [0,2pi]
+else
+    % NuFi method: velocity field is just V
+    Ux = @(X,V) V;
+end
+
+% Set up acceleration field using direct interpolation
+Uv = @(X,V,E) -reshape(interp1d_periodic(X(:), params.grids(1).x, E(:), params.opt_interp), grid.size);
+% Apply symplectic flow based on number of maps
+
+if params.Nmaps == 0
+
+    while n > 2
+        n = n - 1;
+        X = X - dt * Ux(X,V);  % Position update (inverse signs for backward flow)
+        V = V - dt * Uv(X,V,Efield(:,n));  % Velocity update
     end
 
-    % Set up velocity field based on method
-    if method == "CMM"
-        Vperiodic = grid.Vperiodic;
-        Ux = @(X,V)interp2d_periodic(X, V+grid.Lv, grid.x, grid.v+grid.Lv, Vperiodic, opts); % all coordinates must be rescaled to [0,2pi]
-    else
-        % NuFi method: velocity field is just V
-        Ux = @(X,V) V;
-    end
+    % Final half step
+    X = X - dt * Ux(X,V);
+    V = V - (dt / 2) * Uv(X,V,Efield(:,1));
+else
 
-    % Set up acceleration field using direct interpolation
-    Uv = @(X,V,E) -reshape(interp1d_periodic(X(:), params.grids(1).x, E(:), params.opt_interp), grid.size);
-    % Apply symplectic flow based on number of maps
-    
-    if params.Nmaps == 0
-      
-        while n > 2
-            n = n - 1;
-            X = X - dt * Ux(X,V);  % Position update (inverse signs for backward flow)
-            V = V - dt * Uv(X,V,Efield(:,n));  % Velocity update
-        end
-
-        % Final half step
+    while n > 1
+        n = n - 1;
         X = X - dt * Ux(X,V);
-        V = V - (dt / 2) * Uv(X,V,Efield(:,1));
-    else
-        
-        while n > 1
-            n = n - 1;
-            X = X - dt * Ux(X,V);  
-            V = V - dt * Uv(X,V,Efield(:,n)); 
-        end
+        V = V - dt * Uv(X,V,Efield(:,n));
     end
+end
 end

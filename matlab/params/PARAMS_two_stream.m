@@ -1,9 +1,10 @@
 params = struct();
 params.mycase = "two_stream";          % "two_stream"
-params.Nx = 2^8;                            % Number of spatial grid points
-params.Nv = 2^8;                            % Number of velocity grid points
+params.Nx = 2^9;                            % Number of spatial grid points
+params.Nv = 2^9;                            % Number of velocity grid points
 params.Ns = 1;                              % Number of species (electrons and ions)
-params.N_remap = 20;
+params.N_remap = 20;                        % remapping interval (if threshold is not set)
+params.incomp_error_threshold = 1e-3;       % threshold for remapping
 params.method="predcorr";
 %params.dt_adapt_tolerance = 0.1;            % realtive error allowed during time integration
 %params.dt_interv = [1/100, 1];

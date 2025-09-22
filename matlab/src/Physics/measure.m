@@ -22,7 +22,7 @@ for s = 1:params.Ns
     L2norm = sum(abs(f).^2, "all") * grid.dx * grid.dv;
     
     if isfield(params, 'incomp_error')
-        incomp_error = params.incomp_error(s,iT);
+        incomp_error = params.incomp_error(s);
     else
         incomp_error = 0;
     end
