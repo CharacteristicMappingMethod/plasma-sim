@@ -37,11 +37,12 @@ function F_interp = interp1d_periodic(xq, xgrid, Fgrid, opts)
             % This provides proper 4th order convergence for cubic B-splines
             
             % Create periodic data by extending the grid and function values
-            xgrid_extended = [xgrid - 1, xgrid, xgrid + 1]; % Extend grid
-            Fgrid_extended = [Fgrid, Fgrid, Fgrid]; % Periodic extension
+            dx = xgrid(2)-xgrid(1);
+            xgrid_extended = [xgrid(:); xgrid(end)+dx]; % Extend grid
+            Fgrid_extended = [Fgrid(:); Fgrid(1)]; % Periodic extension
             
             % Use MATLAB's spline function
-            F_interp = interp1(xgrid_extended, Fgrid_extended, xqv, 'spline');
+            F_interp = interp1(xgrid_extended, Fgrid_extended, mod(xqv,xgrid_extended(end)), 'spline');
         case 'lagrange-bary'
             % Use Lagrange barycentric periodic interpolation
             if opts.use_mex && (exist('lagrange1d_local_interp_periodic_barycentric.mexa64', 'file') == 2 || ...

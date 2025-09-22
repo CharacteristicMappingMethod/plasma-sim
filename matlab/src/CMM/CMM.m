@@ -27,9 +27,10 @@ N_nufi = N_nufi + 1;
 if ~isfield(params, 'coordinate_maps')
     params.coordinate_maps.X = zeros(params.grids(1).size(1), params.grids(1).size(2), params.Ns);
     params.coordinate_maps.V = zeros(params.grids(1).size(1), params.grids(1).size(2), params.Ns);
+    % Initialize storage for current maps
+    params.coordinate_maps.submap_X = zeros(params.grids(1).size(1), params.grids(1).size(2), params.Ns);
+    params.coordinate_maps.submap_V = zeros(params.grids(1).size(1), params.grids(1).size(2), params.Ns);
 end
-
-
 % Loop over all particle species
 for s = 1:params.Ns
 
@@ -37,6 +38,10 @@ for s = 1:params.Ns
     [X, V] = sympl_flow_Half(N_nufi, dt, params.grids(s).X, params.grids(s).V, ...
         params.charge(s)/params.Mass(s)*params.Efield_list, ...
         params.grids(s), "CMM", params);
+
+    % Store current maps for potential remapping
+    params.coordinate_maps.submap_X(:,:,s) = X;
+    params.coordinate_maps.submap_V(:,:,s) = V;
 
     [detJ, ~, ~, ~, ~] = jacobian_determinant(X, V, params.grids(s));
 
@@ -58,12 +63,18 @@ for s = 1:params.Ns
 end
 
 params.max_incomp_error = max(params.incomp_error);
-% Perform remapping at specified intervals
-if mod(iT, N_remap) == 0 || params.max_incomp_error > params.incomp_error_threshold
-    % Add current map to stack
+
+% Check if this is the final iteration
+is_final_iteration = (iT == params.Nt_max) || (params.time + dt >= params.Tend);
+
+% Perform remapping at specified intervals or on final iteration
+if mod(iT, N_remap) == 0 || params.max_incomp_error > params.incomp_error_threshold || is_final_iteration
+    % Add current maps to stack for all species
     Nmaps = params.Nmaps + 1;
-    params.Map_stack(:,:,1,s,Nmaps) = X;
-    params.Map_stack(:,:,2,s,Nmaps) = V;
+    for s = 1:params.Ns
+        params.Map_stack(:,:,1,s,Nmaps) = params.coordinate_maps.submap_X(:,:,s);
+        params.Map_stack(:,:,2,s,Nmaps) = params.coordinate_maps.submap_V(:,:,s);
+    end
     params.Nmaps = Nmaps;
 
     % Reset N_nufi counter after remapping

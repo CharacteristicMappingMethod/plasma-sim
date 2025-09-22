@@ -32,6 +32,7 @@ params.fini = {params.f0};
 
 % Interpolation parameters
 opts.scheme = 'lagrange-bary';
-opts.order = 3;
+%opts.scheme = 'bspline';
+opts.order = 10;
 opts.use_mex = true;
 params.opt_interp = opts;

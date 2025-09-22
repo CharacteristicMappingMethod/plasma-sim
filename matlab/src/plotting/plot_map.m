@@ -40,15 +40,15 @@ v_indices = round(linspace(1, length(v_orig), nlines));
 for i = 1:length(x_indices)
     idx = x_indices(i);
     plot(X(idx, :), V(idx, :), '-', 'Color', 'b', 'LineWidth', 1.5);
-    plot(X(idx, :)-grid_struct.Lx, V(idx, :), '-', 'Color', 'b', 'LineWidth', 1.5);
-    plot(X(idx, :)+grid_struct.Lx, V(idx, :), '-', 'Color', 'b', 'LineWidth', 1.5);
+   % plot(X(idx, :)-grid_struct.Lx, V(idx, :), '-', 'Color', 'b', 'LineWidth', 1.5);
+  %  plot(X(idx, :)+grid_struct.Lx, V(idx, :), '-', 'Color', 'b', 'LineWidth', 1.5);
 end
 
 for i = 1:length(v_indices)
     idx = v_indices(i);
     plot(X(:, idx), V(:, idx), '-', 'Color', 'b', 'LineWidth', 1.5);
-    plot(X(:, idx)-grid_struct.Lx, V(:, idx), '-', 'Color', 'b', 'LineWidth', 1.5);
-    plot(X(:, idx)+grid_struct.Lx, V(:, idx), '-', 'Color', 'b', 'LineWidth', 1.5);
+   % plot(X(:, idx)-grid_struct.Lx, V(:, idx), '-', 'Color', 'b', 'LineWidth', 1.5);
+   % plot(X(:, idx)+grid_struct.Lx, V(:, idx), '-', 'Color', 'b', 'LineWidth', 1.5);
 end
 
 % Set plot properties
