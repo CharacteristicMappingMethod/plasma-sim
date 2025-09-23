@@ -57,9 +57,9 @@ function [params,data] = Sim(params)
         end
         
         if params.method == "CMM"
-            fprintf("iter: %d, time: %.1f, dt: %.2f, incomp_error: %.2e Nmaps: %d\n",iT, time, params.dt, params.max_incomp_error, params.Nmaps)
+            fprintf("iter: %d, time: %.1f, dt: %.2f, incomp_error: %.2e Nmaps: %d, cpu_time: %.3f s\n",iT, time, params.dt, params.max_incomp_error, params.Nmaps, params.tcpu(iT))
         else
-            fprintf("iter: %d, time: %.1f, dt: %.2f \n",iT, time, params.dt)
+            fprintf("iter: %d, time: %.1f, dt: %.2f, cpu_time: %.3f s\n",iT, time, params.dt, params.tcpu(iT))
         end
         
         % Check if simulation end time is reached
@@ -73,6 +73,15 @@ function [params,data] = Sim(params)
 
     % Save config to file
     save_config(params,data,fs,Nsamples,1);
+    
+    % Print final timing summary
+    total_cpu_time = sum(params.tcpu);
+    avg_cpu_time = mean(params.tcpu);
+    fprintf("\n=== Simulation Complete ===\n");
+    fprintf("Total iterations: %d\n", iT);
+    fprintf("Total CPU time: %.3f s (%.2f min)\n", total_cpu_time, total_cpu_time/60);
+    fprintf("Average time per iteration: %.3f s\n", avg_cpu_time);
+    fprintf("Last iteration CPU time: %.3f s\n", params.tcpu(end));
 end
 
 %% Helper Functions

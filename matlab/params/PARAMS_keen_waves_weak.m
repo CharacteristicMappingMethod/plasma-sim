@@ -14,7 +14,7 @@ params.charge = [-1];                    % Charge of species
 params.Nt_max = 200000;                    % Maximum number of time steps
 params.dt = 0.5;                          % Time step size
 params.dt_save = 200;                      % Save after dt_save time
-params.Tend = 2000;                        % End time of simulation
+params.Tend = 5000;                        % End time of simulation
 
 % Keen waves parameters from paper (weak drive)
 params.kDr = 0.26;                          % Drive wave number
