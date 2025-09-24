@@ -6,8 +6,8 @@ clear all; clc; close all;
 addpath(genpath('../src/'),genpath('../params/'),"../");
 DEFAULTS
 % Load canonical drive parameters
-drive = "weak";
-if drive == "canonical  "
+drive = "canonical";
+if drive == "canonical"
     PARAMS_keen_waves_canonical;
 else
     PARAMS_keen_waves_weak;
@@ -15,7 +15,7 @@ end
 
 start_from_existing = 1;
 % Check if data already exists
-params.data_dir = "../data/keen_waves_"+drive+"/";
+params.data_dir = "../data/keen_waves_"+drive+"_method_" +params.method + "/";
 data_file = params.data_dir+"/data_Tend"+num2str(params.Tend)+".mat";
 
 if exist(data_file, 'file') && start_from_existing
@@ -25,7 +25,7 @@ if exist(data_file, 'file') && start_from_existing
     time_final = data.time(end);
     fprintf('Data loaded successfully!\n');
 else
-    fprintf("Starting Keen waves "+ drive+ "  drive simulation...\n");
+    fprintf("Starting Keen waves "+ drive+ " drive simulation...\n");
     
     % Run simulation
     tic;
@@ -78,7 +78,13 @@ rho0 = sum(f0, 1) * dx;
 
 %% Create zoomed view around v in [1.2, 1.6]
 
+if drive == "weak"
 v_zoom_range = [1.2,1.6];
+myclim = [-0.024,0.024];
+else
+v_zoom_range = [0.375, 2.25];
+myclim = [-0.215,0.20];
+end
 v_zoom = linspace(v_zoom_range(1), v_zoom_range(2), 2048);
 x_zoom = linspace(dom(1), dom(3), 1024);
 [X_zoom, V_zoom] = meshgrid(x_zoom, v_zoom);
@@ -94,9 +100,13 @@ set(gca, 'YDir','normal');
 colormap("jet")
 
 colorbar;
-clim([-0.024,0.024])
-title(sprintf('Zoom ($v \in [%.1f, %.1f]$)', v_zoom_range(1), v_zoom_range(2)));
+clim(myclim)
+title('Zoom');
 xlabel('$x$'); ylabel('$v$');
 
 
 save_fig_tikz(fig_name+"_zoom")
+
+
+%% compute density
+
