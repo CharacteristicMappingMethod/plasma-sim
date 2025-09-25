@@ -14,7 +14,8 @@ for s = 1:params.Ns
     Vgrid = grid.V;
 
     % Calculate diagnostics
-    Mass = sum(f, "all") * grid.dx * grid.dv;
+    density = grid.dv*sum(f,1);
+    Mass = sum(density, "all") * grid.dx;
     Momentum = sum(f .* Vgrid, "all") * grid.dx * grid.dv;
     Epot = 0.5 * sum(Efield.^2) * grid.dx;
     Ekin = 0.5 * sum(f .* (Vgrid.^2), "all") * grid.dx * grid.dv;
@@ -30,9 +31,10 @@ for s = 1:params.Ns
     species_name = params.species_name(s); % Species name
     filename = fullfile(params.data_dir, species_name+".csv");
 
+    rho_modes = fourier_modes(density, 5);
     % Create a table row for the current measurement
-    new_row = table(iT, time, Mass, Momentum, Epot, Ekin, Etot, L2norm, incomp_error, ...
-        'VariableNames', {'it','time','Mass', 'Momentum', 'Epot', 'Ekin', 'Etot', 'L2norm', 'incomp_error'});
+    new_row = table(iT, time, Mass, Momentum, Epot, Ekin, Etot, L2norm, incomp_error, rho_modes(1), rho_modes(2), rho_modes(3), rho_modes(4), rho_modes(5),...
+        'VariableNames', {'it','time','Mass', 'Momentum', 'Epot', 'Ekin', 'Etot', 'L2norm', 'incomp_error', 'rho_1', 'rho_2', 'rho_3', 'rho_4', 'rho_5'});
 
     % Check if the file already exists
     if exist(filename, 'file') && iT>1
@@ -52,17 +54,9 @@ end
 end
 
 
-function [Emode_abs] = fourier_modes(Efield, k_list, grid)
-% this function implements (63-65) of https://arxiv.org/pdf/1009.3046.pdf
-% for odd fourier numbers (k=0.5 etc)
-ik = 1;
-Ek = fft(Efield);
-Emode_abs = abs(Ek(2:5))/grid.size(1);
-%     for k = k_list
-%         Esin_k = sum(Efield.*sin(2*pi*k*grid.x/grid.L(1)))*grid.dx;
-%         Ecos_k = sum(Efield.*cos(2*pi*k*grid.x/grid.L(1)))*grid.dx;
-%         Emode_abs(ik) = sqrt(abs(Esin_k)^2+abs(Ecos_k)^2)/grid.L(1);
-%         ik = ik + 1;
-%     end
+function [mode_abs] = fourier_modes(field1D, nmodes)
+
+field1D_fft = fft(field1D);
+mode_abs = abs(field1D_fft(1:nmodes));
 
 end
