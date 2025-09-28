@@ -73,11 +73,11 @@ for i = 1:num_tests
     fprintf('Running simulation %d/%d (N_remap = %d)...\n', i, num_tests, current_N_remap);
     
     % Save current state and clear to avoid parameter conflicts (following measure_remap_error.m pattern)
-    save('temp_cpu_timing_config.mat', 'N_remap_values', 'target_time', 'num_tests', 'results', 'i', 'data_filename');
+    save(data_dir + 'temp_cpu_timing_config.mat', 'N_remap_values', 'target_time', 'num_tests', 'results', 'i', 'data_filename');
     
     % Clear workspace and reload basics
-    clear all
-    addpath(genpath('./src/'),genpath('./params/'))
+    clear params
+    addpath(genpath('../src/'),genpath('../params/'))
     DEFAULTS
     
     % Reload configuration
@@ -129,7 +129,7 @@ for i = 1:num_tests
     fprintf('Progress: %d/%d simulations completed\n', i, num_tests);
     
     % Save partial results in case of interruption
-    save('temp_cpu_timing_results.mat', 'results', 'N_remap_values', 'target_time');
+    save(data_dir+'temp_cpu_timing_results.mat', 'results', 'N_remap_values', 'target_time');
 end
 
 % Clean up temporary files
@@ -153,7 +153,7 @@ end  % End of if run_simulations
 N_remap_values = results.N_remap_values;
 target_time = results.target_time;
 num_tests = length(N_remap_values);
-data_filename = 'cpu_timing_nremap_two_stream_Tend10.mat';  % Re-define for consistency
+data_filename = data_dir + 'cpu_timing_nremap_two_stream_Tend10.mat';  % Re-define for consistency
 
 %% Data Processing and Analysis
 fprintf('=== Analysis Summary ===\n');
@@ -245,23 +245,12 @@ if ~exist(images_dir, 'dir')
     fprintf('Created %s directory\n', images_dir);
 end
 
-% High-quality export settings
-png_path = fullfile(images_dir, [plot_filename '.png']);
-fig_path = fullfile(images_dir, [plot_filename '.fig']);
-eps_path = fullfile(images_dir, [plot_filename '.eps']);
-pdf_path = fullfile(images_dir, [plot_filename '.pdf']);
-
-% Save in multiple formats for publication
-print(png_path, '-dpng', '-r300');
-print(eps_path, '-depsc2', '-r300');
-print(pdf_path, '-dpdf', '-r300');
-saveas(gcf, fig_path);
+% Save plots using save_fig_tikz (generates PNG and TEX files)
+save_fig_tikz(fullfile(images_dir, plot_filename), gcf);
 
 fprintf('Professional plots saved as:\n');
-fprintf('  PNG: %s\n', png_path);
-fprintf('  EPS: %s\n', eps_path);
-fprintf('  PDF: %s\n', pdf_path);
-fprintf('  FIG: %s\n', fig_path);
+fprintf('  PNG: %s\n', fullfile(images_dir, [plot_filename '.png']));
+fprintf('  TEX: %s\n', fullfile(images_dir, [plot_filename '.tex']));
 
 %% Final Summary
 fprintf('\n=== Final Summary ===\n');
