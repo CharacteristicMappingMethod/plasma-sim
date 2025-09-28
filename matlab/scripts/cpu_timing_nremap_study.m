@@ -33,7 +33,7 @@ num_tests = length(N_remap_values);
 
 % Define data filename and initialize flag
 data_filename = data_dir + "cpu_timing_nremap_two_stream_Tend40.mat";
-run_simulations = false;  % Default to running simulations
+run_simulations = true;  % Default to running simulations
 
 % Check for existing data
 if exist(data_filename, 'file')
@@ -81,7 +81,7 @@ for i = 1:num_tests
     DEFAULTS
     
     % Reload configuration
-    load('temp_cpu_timing_config.mat');
+    load(data_dir + 'temp_cpu_timing_config.mat');
     current_N_remap = N_remap_values(i);
     
     % Load fresh two stream instability parameters
@@ -133,11 +133,11 @@ for i = 1:num_tests
 end
 
 % Clean up temporary files
-if exist('temp_cpu_timing_config.mat', 'file')
-    delete('temp_cpu_timing_config.mat');
+if exist(data_dir + "temp_cpu_timing_config.mat", 'file')
+    delete(data_dir + "temp_cpu_timing_config.mat");
 end
-if exist('temp_cpu_timing_results.mat', 'file')
-    delete('temp_cpu_timing_results.mat');
+if exist(data_dir + "temp_cpu_timing_results.mat", 'file')
+    delete(data_dir +"temp_cpu_timing_results.mat");
 end
 
 fprintf('All simulations completed!\n');
