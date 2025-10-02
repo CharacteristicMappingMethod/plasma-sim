@@ -1,4 +1,4 @@
-function [fs, params] = CMM(params, fs)
+function [fs, params] = CMM_vargrid(params, fs)
 % CMM (Conservative Map Method) implementation for plasma simulation
 %
 % This function implements the Conservative Map Method for advancing
@@ -23,57 +23,34 @@ if isempty(N_nufi)
 end
 % Increment N_nufi counter
 N_nufi = N_nufi + 1;
-% Initialize coordinate maps storage if not exists
-if ~isfield(params, 'coordinate_maps')
-    params.coordinate_maps.X = zeros(params.grids(1).size(1), params.grids(1).size(2), params.Ns);
-    params.coordinate_maps.V = zeros(params.grids(1).size(1), params.grids(1).size(2), params.Ns);
-    % Initialize storage for current maps
-    params.coordinate_maps.submap_X = zeros(params.grids(1).size(1), params.grids(1).size(2), params.Ns);
-    params.coordinate_maps.submap_V = zeros(params.grids(1).size(1), params.grids(1).size(2), params.Ns);
-end
+
 % Loop over all particle species
 for s = 1:params.Ns
 
     % Apply symplectic flow for half step
-    [X, V] = sympl_flow_Half(N_nufi, dt, params.grids(s).X, params.grids(s).V, ...
+    [Xrefined, Vrefined] = sympl_flow_Half(N_nufi, dt, params.grids(s).Xsample_grid, params.grids(s).Vsample_grid, ...
         params.charge(s)/params.Mass(s)*params.Efield_list, ...
         params.grids(s), "CMM", params);
 
-    % Store current maps for potential remapping
-    params.coordinate_maps.submap_X(:,:,s) = X;
-    params.coordinate_maps.submap_V(:,:,s) = V;
-
-    [detJ, ~, ~, ~, ~] = jacobian_determinant(X, V, params.grids(s));
-
-    % we multiply with the weighting function to not count for
-    % incompressibility errors on the periodified edges which are very
-    % distored
-    params.incomp_error(s)=max(abs(log(detJ(:))).*params.grids(s).Weights(:));
     % Compose with existing maps
-    [Xstar, Vstar] = wrap_compose(params, params.grids(s), ...
-        squeeze(params.Map_stack(:,:,:,s,:)), X, V);
-
-    % Store coordinate maps for analysis
-    params.coordinate_maps.X(:,:,s) = Xstar;
-    params.coordinate_maps.V(:,:,s) = Vstar;
-
+    [Xstar, Vstar] = evaluate_map(squeeze(params.Map_stack(:,:,:,s,:)), params.grids(s), params, Xrefined, Vrefined);
+   
     % Evaluate initial condition at new positions
     fini = params.fini{s};
     fs(:,:,s) = fini(Xstar, Vstar);
 end
 
-params.max_incomp_error = max(params.incomp_error);
 
 % Check if this is the final iteration
 is_final_iteration = (iT == params.Nt_max) || (params.time + dt >= params.Tend);
 
 % Perform remapping at specified intervals or on final iteration
-if mod(iT, N_remap) == 0 || params.max_incomp_error > params.incomp_error_threshold || is_final_iteration
+if mod(iT, N_remap) == 0 || is_final_iteration
     % Add current maps to stack for all species
     Nmaps = params.Nmaps + 1;
     for s = 1:params.Ns
-        params.Map_stack(:,:,1,s,Nmaps) = params.coordinate_maps.submap_X(:,:,s);
-        params.Map_stack(:,:,2,s,Nmaps) = params.coordinate_maps.submap_V(:,:,s);
+        params.Map_stack(:,:,1,s,Nmaps) = Xrefined(params.grids(s).original_indices,:);
+        params.Map_stack(:,:,2,s,Nmaps) = Vrefined(params.grids(s).original_indices,:);
     end
     params.Nmaps = Nmaps;
 
@@ -115,6 +92,7 @@ if n == 1
     return;
 end
 
+gridsize = size(V);
 % Set up velocity field based on method
 if method == "CMM"
     Vperiodic = grid.Vperiodic;
@@ -125,7 +103,7 @@ else
 end
 
 % Set up acceleration field using direct interpolation
-Uv = @(X,V,E) -reshape(interp1d_periodic(X(:), params.grids(1).x, E(:), params.opt_interp), grid.size);
+Uv = @(X,V,E) -reshape(interp1d_periodic(X(:), params.grids(1).x, E(:), params.opt_interp), gridsize);
 
 % Apply symplectic flow based on number of maps
 if params.Nmaps == 0

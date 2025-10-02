@@ -12,6 +12,8 @@ function [grid] = make_periodic_grid(Lx,Lv,Nx,Nv)
 
     grid.x  = x; grid.v  = v;
     grid.X  = X; grid.V  = V;
+    grid.Xsample_grid = X; grid.Vsample_grid = V; % sample grid is the grid at which f is evaluated.
+    grid.size_sample_grid = size(X);
     grid.dx = dx;grid.dv = dv;
     grid.Lx = Lx;grid.Lv = Lv;
     grid.Nx = Nx;grid.Nv = Nv;
@@ -38,8 +40,12 @@ function [grid] = make_periodic_grid(Lx,Lv,Nx,Nv)
     % Fourier
     kx = (2*pi/Lx) * [-Nx/2:Nx/2-1];
     grid.kx = fftshift(kx);
+    grid.kx2 = grid.kx.^2;
+    grid.kx2(1) = 1;
     kv = (pi/Lv) * [-Nv/2:Nv/2-1];
     grid.kv = fftshift(kv);
+    grid.kv2 = grid.kv.^2;
+    grid.kv2(1) = 1;
 
     % periodic flow velocity
     [vper,sigma] = velocity_periodicfication(grid);

@@ -16,7 +16,8 @@ params.k            = 0.5;                % Wave number
 params.Lx           = 2 * pi / params.k;  % Length of spatial domain
 params.Lv           = 12;                 % Velocity domain length (default)
 params.Lv_s         = [12, 0.1 * pi];     % Velocity domain for each species
-
+params.plot_freq = 10;                      % Nr. of iterations between plotting (if 0 no plotting)
+params.measure_freq = 1;                    % Nr. of iterations between measurements (if 0 no measurements)
 %% Species Parameters
 params.Ns           = 1;                  % Number of species
 params.species_name = ["electrons"];      % Names of species

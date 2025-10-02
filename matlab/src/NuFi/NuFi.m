@@ -5,7 +5,7 @@ for s = 1:params.Ns
     [X,V] = sympl_flow_Half(iT,dt,params.grids(s).X,params.grids(s).V,params.charge(s)/params.Mass(s)*params.Efield_list,params.grids(s),params);
     fini = params.fini{s};
     fs(:,:,s) = fini(X,V);
-    [detJ, ~, ~, ~, ~] = jacobian_determinant(X, V, params.grids(s), "FD");
+   % [detJ, ~, ~, ~, ~] = jacobian_determinant(X, V, params.grids(s), "FD");
 end
 % Compute electric field
 [Efield] =vPoisson(fs,params.grids,params.charge);
@@ -49,11 +49,13 @@ function [X, V] = sympl_flow_Half(n, dt, X, V, Efield, grid, params)
     % Set up acceleration field using direct interpolation
     Uv = @(X,V,E) -reshape(interp1d_periodic(X(:), params.grids(1).x, E(:), params.opt_interp), grid.size);
 
-    % Apply symplectic flow
-    while n > 2
-        n = n - 1;
-        X = X - dt * Ux(X,V);  % Position update (inverse signs for backward flow)
-        V = V - dt * Uv(X,V,Efield(:,n));  % Velocity update
+    % Apply symplectic flow - vectorized implementation
+    if n > 2
+        % Full steps: n-2 iterations
+        for i = 1:(n-2)
+            X = X - dt * Ux(X,V);  % Position update (inverse signs for backward flow)
+            V = V - dt * Uv(X,V,Efield(:,n-i));  % Velocity update
+        end
     end
 
     % Final half step

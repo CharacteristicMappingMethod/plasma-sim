@@ -15,7 +15,8 @@ params.Nt_max = 200000;                    % Maximum number of time steps
 params.dt = 0.5;                          % Time step size
 params.dt_save = 200;                      % Save after dt_save time
 params.Tend = 5000;                        % End time of simulation
-
+params.plot_freq = 10;                      % Nr. of iterations between plotting (if 0 no plotting)
+params.measure_freq = 1;                    % Nr. of iterations between measurements (if 0 no measurements)
 % Keen waves parameters from paper (weak drive)
 params.kDr = 0.26;                          % Drive wave number
 params.wDr = 0.37;                          % Drive frequency

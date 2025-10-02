@@ -42,11 +42,14 @@ function [params,data] = Sim(params)
         params.time_array(iT) = time;
 
         % Measurements
-        [params]=measure(params, fs);
+        if mod(iT,params.measure_freq) ==0
+            [params]=measure(params, fs);
+        end
 
         % Plot results at each time step
-        plot_results(params, fs);
-
+        if mod(iT,params.plot_freq) == 0
+            plot_results(params, fs);
+        end
         % Record CPU time for this iteration
         params.tcpu(iT) = toc(tic_iter);
 
@@ -56,7 +59,7 @@ function [params,data] = Sim(params)
             data = save_config(params,data,fs,Nsamples);
         end
         
-        if params.method == "CMM"
+        if params.method == "CMM" || params.method == "CMM_vargrid"
             fprintf("iter: %d, time: %.1f, dt: %.2f, incomp_error: %.2e Nmaps: %d, cpu_time: %.3f s\n",iT, time, params.dt, params.max_incomp_error, params.Nmaps, params.tcpu(iT))
         else
             fprintf("iter: %d, time: %.1f, dt: %.2f, cpu_time: %.3f s\n",iT, time, params.dt, params.tcpu(iT))
@@ -114,6 +117,8 @@ function [fs, params] = step(params, fs)
         [fs,params] = NuFi(params,fs);
     elseif params.method == "CMM"
         [fs,params] = CMM(params,fs);
+    elseif params.method == "CMM_vargrid"
+        [fs,params] = CMM_vargrid(params,fs);
     else
         error("Unknown method: %s", params.method);
     end
@@ -132,7 +137,7 @@ function plot_results(params, fs)
     % Plot distribution function for each species
     for s = 1:params.Ns
         subplot(params.Ns+1, 1, s);
-        pcolor(params.grids(s).X, params.grids(s).V, fs(:, :, s));
+        pcolor(params.grids(s).Xsample_grid, params.grids(s).Vsample_grid, fs(:, :, s));
         shading flat;
         subtitle("$f_\mathrm{"+params.species_name(s)+"}$");
         colorbar();

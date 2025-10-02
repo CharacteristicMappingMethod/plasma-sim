@@ -16,7 +16,7 @@ function [Map_composed_numeric] = compose_maps_numerical(Maps, grid, params)
 %   Map_composed_numeric - 3D array [Nv, Nx, 2] containing the composed map
 
 % Get number of maps
-N_maps = size(Maps, 4);
+N_maps = params.Nmaps;
 
 x = grid.x;
 v = grid.v; 

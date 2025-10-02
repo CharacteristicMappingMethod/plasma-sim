@@ -1,7 +1,7 @@
 params = struct();
 params.mycase = "two_stream";          % "two_stream"
-params.Nx = 2^9;                            % Number of spatial grid points
-params.Nv = 2^9;                            % Number of velocity grid points
+params.Nx = 2^7;                            % Number of spatial grid points
+params.Nv = 2^7;                            % Number of velocity grid points
 params.Ns = 1;                              % Number of species (electrons and ions)
 params.N_remap = 20;                        % remapping interval (if threshold is not set)
 params.incomp_error_threshold = 1e-3;       % threshold for remapping
@@ -16,6 +16,8 @@ params.Nt_max = 4000;                       % Maximum number of time steps
 params.dt = 1/4;                            % Time step size
 params.dt_save = 10;                        % Save after dt_save time
 params.Tend = 40;                           % End time of simulation
+params.plot_freq = 1;                      % Nr. of iterations between plotting (if 0 no plotting)
+params.measure_freq = 1;                    % Nr. of iterations between measurements (if 0 no measurements)
 
 % Initial condition parameters
 params.k = 0.2;                             % Wave number
@@ -33,6 +35,6 @@ params.fini = {params.f0};
 % Interpolation parameters
 opts.scheme = 'lagrange-bary';
 %opts.scheme = 'bspline';
-opts.order = 3;
+opts.order = 31;
 opts.use_mex = true;
 params.opt_interp = opts;

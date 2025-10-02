@@ -18,6 +18,8 @@ params.Tend = 80;                          % End time of simulation
 params.k = 0.5;                             % Wave number
 params.alpha = 0.5;                         % Perturbation amplitude
 params.pert = @(x) params.alpha * cos(params.k * x); % Perturbation function
+params.plot_freq = 10;                      % Nr. of iterations between plotting (if 0 no plotting)
+params.measure_freq = 1;                    % Nr. of iterations between measurements (if 0 no measurements)
 
 % Electrons
 params.Ue = -2;                   % Electron drift velocity

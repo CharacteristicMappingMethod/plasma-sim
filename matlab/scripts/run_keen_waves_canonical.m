@@ -12,10 +12,12 @@ if drive == "canonical"
 else
     PARAMS_keen_waves_weak;
 end
+params.method = "CMM_vargrid";
+%%
 
 start_from_existing = 1;
 % Check if data already exists
-params.data_dir = "../data/keen_waves_"+drive+"_method_" +params.method + "_dt0.25/";
+params.data_dir = "../data/keen_waves_"+drive+"_method_" +params.method;
 data_file = params.data_dir+"/data_Tend"+num2str(params.Tend)+".mat";
 
 if exist(data_file, 'file') && start_from_existing
@@ -44,7 +46,7 @@ else
     time_final = data.time(end);
 end
 
-% Get grid information
+%% Get grid information
 dom = params.grids(1).dom;
 x = params.grids(1).x;
 v = params.grids(1).v;
@@ -56,7 +58,7 @@ V = params.grids(1).V;
 f0 = params.f0(X, V);
 
 % Compute f - f_0
-f_deviation = fs_final - f0;
+f_deviation = fs_final- f0;
 
 %% Create figure
 fig_name = sprintf("../images/%s_Tend%d_dt%.1f_Nremap%d", params.mycase, params.Tend, params.dt, params.N_remap);
@@ -111,3 +113,27 @@ save_fig_tikz(fig_name+"_zoom")
 
 %% compute density
 
+
+figure(6)
+species_name = params.species_name(1);  % Assuming single species
+csv_file = fullfile(params.data_dir, species_name + ".csv");
+
+fprintf('Loading conservation data from: %s\n', csv_file);
+data_table = readtable(csv_file);
+
+time = data_table.time;
+%rho_modes(:,1) = data_table.rho_1;
+rho_modes(:,1) = data_table.rho_2;
+rho_modes(:,2) = data_table.rho_3;
+rho_modes(:,3) = data_table.rho_4;
+rho_modes(:,4) = data_table.rho_5;
+plot(time(1:50:end), rho_modes(1:50:end,:),"LineWidth",1);
+title('Density Modes - Drive Frequency Component');
+xlabel('Time $t$', 'Interpreter', 'latex');
+ylabel('$|\hat{\rho}(k, t)|$', 'Interpreter', 'latex');
+grid on;
+set(gca, 'FontSize', 14);
+xlim([0,time(end)])
+legend("$k=1$","$k=2$","$k=3$","$k=4$","$k=5$")
+% Save the plot
+save_fig_tikz(fig_name + "_density_modes");

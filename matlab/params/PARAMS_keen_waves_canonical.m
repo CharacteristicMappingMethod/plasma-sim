@@ -4,6 +4,8 @@ params.Nx = 2^8;                            % Number of spatial grid points
 params.Nv = 2^8;                            % Number of velocity grid points
 params.Ns = 1;                              % Number of species (electrons only)
 params.N_remap = 20;
+params.refine_factor = 30;
+params.v_range = [0.375, 2.25];
 params.method="NuFi";
 %params.dt_adapt_tolerance = 0.1;            % realtive error allowed during time integration
 %params.dt_interv = [1/100, 1];
@@ -15,7 +17,8 @@ params.Nt_max = 100000;                     % Maximum number of time steps
 params.dt = 0.5;                          % Time step size
 params.dt_save = 50;                      % Save after dt_save time
 params.Tend = 1000;                        % End time of simulation
-
+params.plot_freq = 1;                      % Nr. of iterations between plotting (if 0 no plotting)
+params.measure_freq = 10;                    % Nr. of iterations between measurements (if 0 no measurements)
 % Keen waves parameters from paper
 params.kDr = 0.26;                          % Drive wave number
 params.wDr = 0.37;                          % Drive frequency

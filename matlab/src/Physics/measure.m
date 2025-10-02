@@ -11,16 +11,16 @@ for s = 1:params.Ns
     % Get species-specific grid and distribution function
     grid = params.grids(s);
     f = fs(:,:,s);
-    Vgrid = grid.V;
-
+    Vgrid = grid.Vsample_grid;
+    dv = grid.dv;
     % Calculate diagnostics
-    density = grid.dv*sum(f,1);
+    density = compute_density(f,grid.dv);
     Mass = sum(density, "all") * grid.dx;
-    Momentum = sum(f .* Vgrid, "all") * grid.dx * grid.dv;
+    Momentum = sum((f .* Vgrid) .* dv(:), "all") * grid.dx;
     Epot = 0.5 * sum(Efield.^2) * grid.dx;
-    Ekin = 0.5 * sum(f .* (Vgrid.^2), "all") * grid.dx * grid.dv;
+    Ekin = 0.5 * sum(f .* (Vgrid.^2).*dv(:), "all") * grid.dx;
     Etot = Epot + Ekin;
-    L2norm = sum(abs(f).^2, "all") * grid.dx * grid.dv;
+    L2norm = sum((abs(f).^2).*dv(:), "all") * grid.dx;
     
     if isfield(params, 'incomp_error')
         incomp_error = params.incomp_error(s);
@@ -57,6 +57,6 @@ end
 function [mode_abs] = fourier_modes(field1D, nmodes)
 
 field1D_fft = fft(field1D);
-mode_abs = abs(field1D_fft(1:nmodes));
+mode_abs = abs(field1D_fft(2:nmodes+1));
 
 end

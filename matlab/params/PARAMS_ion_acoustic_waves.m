@@ -13,7 +13,8 @@ params.dt = 1/4;                            % Time step size
 params.Nsubs = 8;
 params.dt_save = 5;                        % Save after dt_save time
 params.Tend = 20;                          % End time of simulation
-
+params.plot_freq = 10;                      % Nr. of iterations between plotting (if 0 no plotting)
+params.measure_freq = 1;                    % Nr. of iterations between measurements (if 0 no measurements)
 % Initial condition parameters
 params.k = 0.5;                             % Wave number
 params.alpha = 0.5;                         % Perturbation amplitude

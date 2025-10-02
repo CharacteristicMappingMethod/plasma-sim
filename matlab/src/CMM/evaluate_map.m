@@ -16,7 +16,7 @@ function [X_eval, V_eval] = evaluate_map(Maps, grid, params, X_query, V_query)
 %   X_eval, V_eval  - Evaluated coordinates after applying all maps
 
 % Get number of maps
-N_maps = size(Maps, 4);
+N_maps = params.Nmaps;
 
 % Initialize with query points
 current_x = X_query;
