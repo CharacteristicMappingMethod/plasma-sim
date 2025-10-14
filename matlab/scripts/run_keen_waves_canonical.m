@@ -12,12 +12,12 @@ if drive == "canonical"
 else
     PARAMS_keen_waves_weak;
 end
-params.method = "CMM";
+params.method = "CMM_vargrid";
 %%
 
 start_from_existing = 1;
 % Check if data already exists
-params.data_dir = "../data/keen_waves_"+drive+"_method_" +params.method+"_dt0.05";
+params.data_dir = "../data/keen_waves_"+drive+"_method_" +params.method;
 data_file = params.data_dir+"/data_Tend"+num2str(params.Tend)+".mat";
 
 if exist(data_file, 'file') && start_from_existing
