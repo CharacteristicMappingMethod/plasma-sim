@@ -15,7 +15,7 @@ PARAMS_two_stream;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% simulate
 tic()
-params.method = "CMM";
+params.method = "CMM_vargrid";
 [params1, data] = Sim(params);
 t(1) = toc()
 

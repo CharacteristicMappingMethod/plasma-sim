@@ -74,17 +74,17 @@ figure('Position', [100, 100, 1200, 800]);
 %subplot(2, 1, 1);
 x = X(1,:);
 v = V(:,1);
-
-uimagesc(x, v, f_deviation);
+[f_deviation_shift] = shift_field_periodic(f_deviation, 280);
+uimagesc(x, v, f_deviation_shift);
 set(gca, 'YDir','normal');
 hold on
 dN =2;
 dNx = 2;
 %mesh(X(1:dN:end,1:dNx:end), V(1:dN:end,1:dNx:end), 0*f_deviation(1:dN:end,1:dNx:end), 'EdgeColor', 'k', 'FaceAlpha', 0);
-Xequi= params.grids(1).X;
-Vequi = params.grids(1).V;
+%Xequi= params.grids(1).X;
+%Vequi = params.grids(1).V;
 
-mesh(Xequi(1:dN:end,1:dNx:end), Vequi(1:dN:end,1:dNx:end), 0*Xequi(1:dN:end,1:dNx:end), 'EdgeColor', 'k', 'FaceAlpha', 0);
+%mesh(Xequi(1:dN:end,1:dNx:end), Vequi(1:dN:end,1:dNx:end), 0*Xequi(1:dN:end,1:dNx:end), 'EdgeColor', 'k', 'FaceAlpha', 0);
 %shading flat;
 colorbar;
 

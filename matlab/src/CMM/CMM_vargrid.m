@@ -27,17 +27,22 @@ N_nufi = N_nufi + 1;
 % Loop over all particle species
 for s = 1:params.Ns
 
-    % Apply symplectic flow for half step
-    [Xrefined, Vrefined] = sympl_flow_Half(N_nufi, dt, params.grids(s).Xsample_grid, params.grids(s).Vsample_grid, ...
-        params.charge(s)/params.Mass(s)*params.Efield_list, ...
-        params.grids(s), "CMM", params);
+        % Use sample grid for flow and map grid for storage
+        sample_grid = params.grids(s).sample;
+        map_grid = params.grids(s).map;
+        
+        % Apply symplectic flow for half step on sample grid
+        [Xrefined, Vrefined] = sympl_flow_Half(N_nufi, dt, sample_grid.X, sample_grid.V, ...
+            params.charge(s)/params.Mass(s)*params.Efield_list, ...
+            sample_grid, "CMM", params);
 
-    % Compose with existing maps
-    [Xstar, Vstar] = evaluate_map(squeeze(params.Map_stack(:,:,:,s,:)), params.grids(s), params, Xrefined, Vrefined);
-   
-    % Evaluate initial condition at new positions
-    fini = params.fini{s};
-    fs(:,:,s) = fini(Xstar, Vstar);
+        % Compose with existing maps
+        [Xstar, Vstar] = evaluate_map(squeeze(params.Map_stack(:,:,:,s,:)), map_grid, params, Xrefined, Vrefined);
+        
+        % Evaluate initial condition at new positions
+        fini = params.fini{s};
+        fs(:,:,s) = fini(Xstar, Vstar);
+        
 end
 
 
@@ -49,8 +54,8 @@ if mod(iT, N_remap) == 0 || is_final_iteration
     % Add current maps to stack for all species
     Nmaps = params.Nmaps + 1;
     for s = 1:params.Ns
-        params.Map_stack(:,:,1,s,Nmaps) = Xrefined(params.grids(s).original_indices,:);
-        params.Map_stack(:,:,2,s,Nmaps) = Vrefined(params.grids(s).original_indices,:);
+        params.Map_stack(:,:,1,s,Nmaps) = Xrefined(params.grids(s).idx_sample_to_map{1},params.grids(s).idx_sample_to_map{2});
+        params.Map_stack(:,:,2,s,Nmaps) = Vrefined(params.grids(s).idx_sample_to_map{1},params.grids(s).idx_sample_to_map{2});
     end
     params.Nmaps = Nmaps;
 

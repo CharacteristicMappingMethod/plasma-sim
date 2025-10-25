@@ -33,8 +33,10 @@ end
 % Apply composition mapping to transform coordinates (X,V) -> (Xstar,Vstar)
 % This uses the mapping stored in Map_stack for species s
 %[Xstar, Vstar] = wrap_compose(params, params.grids(s),    squeeze(params.Map_stack(:,:,:,s,:)), X, V);
-if params.method=="CMM"
+if params.method=="CMM" 
     [X_star, V_star] = evaluate_map(squeeze(params.Map_stack(:,:,:,s,:)), params.grids(s), params, X, V);
+elseif params.method=="CMM_vargrid"
+    [X_star, V_star] = evaluate_map(squeeze(params.Map_stack(:,:,:,s,:)), params.grids(s).map, params, X, V);
 elseif params.method=="NuFi"
     [X_star, V_star] = sympl_flow(params, params.Nt_max,params.dt,X,V,-params.Efield_list,params.grids(s));
 else

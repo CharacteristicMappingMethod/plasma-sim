@@ -1,22 +1,21 @@
 params = struct();
 params.mycase = "two_stream";          % "two_stream"
-params.Nx = 2^7;                            % Number of spatial grid points
-params.Nv = 2^7;                            % Number of velocity grid points
+params.Nsample = [2^8, 2^8];                % number of grid points in the sample grid
+params.Nmap = [2^6, 2^6];                   % number of grid points saved in the map grid
 params.Ns = 1;                              % Number of species (electrons and ions)
 params.N_remap = 20;                        % remapping interval (if threshold is not set)
-params.incomp_error_threshold = 1e-3;       % threshold for remapping
-params.method="predcorr";
+params.method="CMM_vargrid";
 %params.dt_adapt_tolerance = 0.1;            % realtive error allowed during time integration
 %params.dt_interv = [1/100, 1];
-params.species_name = ["ions"]; % name of the different species
+params.species_name = ["electrons"]; % name of the different species
 params.Mr = 1;                           % Mass ratio for ions
 params.Mass = [1];               % Mass of species
 params.charge = [-1];                    % Charge of species
 params.Nt_max = 4000;                       % Maximum number of time steps
-params.dt = 1/4;                            % Time step size
+params.dt = 1/5;                            % Time step size
 params.dt_save = 10;                        % Save after dt_save time
 params.Tend = 40;                           % End time of simulation
-params.plot_freq = 1;                      % Nr. of iterations between plotting (if 0 no plotting)
+params.plot_freq = 10;                      % Nr. of iterations between plotting (if 0 no plotting)
 params.measure_freq = 1;                    % Nr. of iterations between measurements (if 0 no measurements)
 
 % Initial condition parameters
@@ -30,11 +29,12 @@ params.Lx = 2 * pi / params.k;    % Spatial domain length
 params.Lv = 5 * pi; % Velocity domain lengths for each species
 
 params.f0 = @(x, v) (1 + params.eps*cos(params.k*x)) ./(2*sqrt(2*pi)).*(exp(-(v-params.v0).^2/2)+exp(-(v+params.v0).^2/2));
+%params.f0 = @(x, v) (1 + params.eps*cos(params.k*x)) ./(2*sqrt(2*pi)).*v.^2.*(exp(-(v).^2/2));
 params.fini = {params.f0};
 
 % Interpolation parameters
 opts.scheme = 'lagrange-bary';
 %opts.scheme = 'bspline';
-opts.order = 31;
+opts.order = 3;
 opts.use_mex = true;
 params.opt_interp = opts;

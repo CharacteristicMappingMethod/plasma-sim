@@ -6,9 +6,9 @@ params.mycase       = "landau_damping";   % Options: "landau_damping", "two_stre
 params.method       = "predcorr";         % Time integration method
 params.Nt_max       = 4000000;               % Max number of time steps
 params.dt           = 0.1;                % Time step size
-params.Tend         = 20;                 % Simulation end time
+params.Tend         = 100;                 % Simulation end time
 params.dt_save      = 10;                 % Save data every dt_save time units
-
+params.N_remap = 20;
 %% Grid Parameters
 params.Nx           = 2^8;                % Number of spatial grid points
 params.Nv           = 2^8;                % Number of velocity grid points
@@ -26,7 +26,7 @@ params.Mass         = [1];                % Mass of each species
 params.charge       = [1];                % Charge of each species
 
 %% Initial Condition Parameters
-params.alpha        = 0.05;                % Perturbation amplitude
+params.alpha        = 0.01;                % Perturbation amplitude
 params.f0 = @(x,v) (1 + params.alpha * cos(x * params.k)) ...
                 ./ sqrt(2 * pi) .* exp(-(v).^2 / 2);
 params.fini = {params.f0};                % Initial distribution function
