@@ -19,6 +19,7 @@ params_base = params;
 case_name = "two_stream";
 Nsample = [1024];
 Nmap = [64];
+
 methods = ["NuFi", "CMM", "predcorr"];
 Tend = 40;
 
@@ -183,7 +184,7 @@ zoom_end = 0.005;   % Ending zoom factor (smaller = more zoomed in)
 zoom_factors = logspace(log10(zoom_start), log10(zoom_end), num_frames);
 
 % Create output directory for zoom images
-zoom_output_dir = "../images/zoom" + case_name;
+zoom_output_dir = "../images/zoom_" + case_name;
 if ~exist(zoom_output_dir, 'dir')
     mkdir(zoom_output_dir);
     fprintf('Created zoom output directory: %s\n', zoom_output_dir);
@@ -247,7 +248,7 @@ set(gca, 'YTick', []);
 % Get overall title handle
 h_title = sgtitle('\textbf{Initial View}', 'FontSize', 20, 'Interpreter', 'latex');
 %
-for i = 1:num_frames    
+for i = [1,1:num_frames]    
     % Calculate current zoom level
     current_zoom = zoom_factors(i);
     

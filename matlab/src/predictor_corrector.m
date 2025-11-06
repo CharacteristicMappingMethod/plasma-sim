@@ -10,14 +10,14 @@ s_ion  = find(params.species_name == "ions");
 charge = params.charge;
 mass   = params.Mass;
 grids  = params.grids;
-
+ord = params.opt_interp.order;
 % Compute electric field
 [Efield] = vPoisson(fs, params.grids, params.charge);
 Efield = Efield + compute_external_Efield(params, params.grids(1).x, params.time);
 
 % Advect distribution functions for half time step
 for s = 1:params.Ns
-    f12(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield, params.grids(s), params.dt / 2);
+    f12(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield, params.grids(s), params.dt / 2, ord);
 end
 
 % Recompute electric field
@@ -25,7 +25,7 @@ end
 Efield = Efield + compute_external_Efield(params, params.grids(1).x, params.time+params.dt/2);
 % Advect distribution functions for full time step
 for s = 1:params.Ns
-    fs(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield, params.grids(s), params.dt);
+    fs(:, :, s) = Advect(fs(:, :, s), params.charge(s) / params.Mass(s) * Efield, params.grids(s), params.dt,ord);
 end
 
 % save electric field;

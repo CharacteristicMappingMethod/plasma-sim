@@ -51,14 +51,13 @@ for s = 1:params.Ns
         % Create sample grid
         [grid_sample] = make_periodic_grid(params.Lx, Lv, Nsample(1), Nsample(2));
         grid_sample.method = "spline";
+        params.grids(s).sample = grid_sample;
         
         % Create map grid
         [grid_map] = make_periodic_grid(params.Lx, Lv, Nmap(1), Nmap(2));
         grid_map.method = "spline";
-        
-        % Store both grids
-        params.grids(s).sample = grid_sample;
         params.grids(s).map = grid_map;
+        
         
         % Create index mapping from sample grid to map grid
         % Since sample grid is finer, we need to map each sample point to nearest map point
@@ -115,14 +114,30 @@ for s = 1:params.Ns
 end
 
 if params.method=="CMM_vargrid" && isfield(params, 'refine_factor') && params.Ns==1 % works only for one species
+    [grid_map] = make_periodic_grid(params.Lx, Lv, params.Nx, params.Nv);
+    grid_map.method = "spline";
+    params.grids(1).map = grid_map;
+
+    % correct the sample grid
+    [grid_sample] = make_periodic_grid(params.Lx, Lv, params.Nx, params.Nv);
+    grid_sample.method = "spline";
+    params.grids(1).sample = grid_sample;
+    X = params.grids(1).sample.X;
+    V = params.grids(1).sample.V;
     [v_refined_partial, original_indices, dv_refined] = refine_velocity_grid(params.grids(1).v, params.refine_factor, params.v_range);
-    params.grids(1).v_refined = v_refined_partial;
-    params.grids(1).idx_sample_to_map = {1:params.Nx, original_indices};
-    params.grids(1).dv = dv_refined;
     [Xref,Vref] = meshgrid(params.grids(1).x,v_refined_partial);
+    params.grids(1).sample.v = v_refined_partial;
+    params.grids(1).sample.dv = dv_refined;
+    params.grids(1).v = v_refined_partial;
+    params.grids(1).idx_sample_to_map = { original_indices', [1:params.Nx]'};
+    params.grids(1).dv = dv_refined;
     params.grids(1).Xsample_grid = Xref;
     params.grids(1).Vsample_grid = Vref;
 
+    params.grids(1).sample.Vperiodic = interp2d_periodic(Xref, Vref+grid_sample.Lv, grid_sample.x, grid_sample.v+grid_sample.Lv, grid_sample.Vperiodic, params.opt_interp); % all coordinates must be rescaled to [0,2pi]
+    
+    params.grids(1).sample.X = Xref;
+    params.grids(1).sample.V = Vref;
     params.grids(1).size_sample_grid=size(Xref);
     
     % Test that the index mapping is correct for legacy case

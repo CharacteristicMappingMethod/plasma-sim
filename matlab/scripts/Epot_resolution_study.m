@@ -9,20 +9,24 @@ addpath(genpath('../src/'),genpath('../params/'),"../");
 DEFAULTS
 
 case_name = "two_stream";
+%case_name = "landau_damping";
 
 if case_name == "landau_damping"
     fprintf('Selected: Two Stream Instability\n');
     % Load Landau damp         ing parameters
     PARAMS_landau_damping;
     % Define resolutions and methods to test
-    resolutions = [32, 128, 256, 512];
-    methods = ["NuFi", "CMM", "predcorr"];
+    resolutions = [32, 128, 256];
+    resolution_map = [32];
+    methods = ["NuFi", "CMM", "predcorr", "CMM_vargrid"];
+        methods = ["NuFi", "CMM_vargrid"];
     Tend = 100;
 elseif case_name == "two_stream"
     fprintf('Selected: Two Stream Instability\n');
     PARAMS_two_stream;
     resolutions = [ 128*2];
-    methods = ["NuFi", "CMM", "predcorr", "predcorr_3rd"];
+    resolution_map = [64];
+    methods = ["NuFi", "CMM", "predcorr", "predcorr_3rd","CMM_vargrid"];
     Tend = 100;
 else
     error("wrong case_name")
@@ -78,6 +82,10 @@ for i_res = 1:length(resolutions)
             params_current.Tend = Tend;
             params_current.data_dir = data_dir;
 
+            if method == "CMM_vargrid"
+                params_current.Nsample = [Nx, Nx];
+                params_current.Nmap = resolution_map;
+            end
             % Create data directory if it doesn't exist
             if ~exist(data_dir, 'dir')
                 mkdir(data_dir);
@@ -120,9 +128,9 @@ fprintf('\nCreating potential energy plots...\n');
 fig1 = figure('Position', [100, 100, 1200, 800]);
 
 % Define colors and line styles
-colors = {'b', 'r', 'g', 'k'};
-line_styles = {'-', 'none', ':','--'};
-markers = {'none', 's', 'o','none'};
+colors = {'b', 'r', 'g', 'k', 'y'};
+line_styles = {'-', 'none', ':','--','none'};
+markers = {'none', 's', 'o','none','x'};
 % Darker colors for markers (second and third methods)
 marker_colors = {[0, 0, 0.6], [0.6, 0, 0], [0, 0.6, 0],  [0.6, 0.6, 0.6]}; % Darker blue, red, green
 
@@ -142,23 +150,28 @@ for i_method = 1:length(methods)
 
         if ~isempty(Epot) && ~isempty(time)
             % Plot in log scale with different line styles for methods
-            if i_method == 2  % Second method (CMM) - use darker marker colors
+            if method == "CMM"  % Second method (CMM) - use darker marker colors
                 semilogy(time, abs(Epot), 'Color', colors{i_method}, ...
                     'LineStyle', line_styles{i_method}, 'LineWidth',1,...
                     'Marker', markers{i_method}, 'MarkerSize',1,...
                     'MarkerFaceColor', marker_colors{i_method}, 'MarkerEdgeColor', marker_colors{i_method}, ...
-                    'DisplayName', sprintf('$N_x=N_v=%d$ (%s)', Nx, method));
-            elseif i_method == 3  % Third method (predcorr) - use dotted lines with markers
+                    'DisplayName', sprintf('$\\Nsample=%d$ (CMM-NuFi)', Nx));
+            elseif method=="predcorr"  % Third method (predcorr) - use dotted lines with markers
                 semilogy(time-params.dt/2, abs(Epot), 'Color', colors{i_method}, ...
                     'LineStyle', line_styles{i_method}, 'LineWidth',1,...
                     'Marker', markers{i_method}, 'MarkerSize',1,...
                     'MarkerFaceColor', marker_colors{i_method}, 'MarkerEdgeColor', marker_colors{i_method}, ...
-                    'DisplayName', sprintf('$N_x=N_v=%d$ (%s)', Nx, method));
-            else  % First method (NuFi) - use regular colors
+                    'DisplayName', sprintf('$\\Nsample=%d$ (%s)', Nx, method));
+            elseif method=="NuFi"  % First method (NuFi) - use regular colors
                 semilogy(time, abs(Epot), 'Color', colors{i_method}, ...
                     'LineStyle', line_styles{i_method},'LineWidth',1, ...
                     'Marker', markers{i_method}, ...
-                    'DisplayName', sprintf('$N_x=N_v=%d$ (%s)', Nx, method));
+                    'DisplayName', sprintf('$\Nsample=%d$ (%s)', Nx, method));
+            elseif method=="CMM_vargrid"  % First method (NuFi) - use regular colors
+                semilogy(time(1:4:end), abs(Epot(1:4:end)), 'Color', colors{i_method}, ...
+                    'LineStyle', line_styles{i_method},'LineWidth',1, ...
+                    'Marker', markers{i_method}, ...
+                    'DisplayName', sprintf('$\\Nsample=%d$ $\\Nmapgrid=%d$ (CMM-NuFi)', Nx, resolution_map));
             end
         else
             fprintf('Warning: No data available for Nx=%d, Method=%s\n', Nx, method);

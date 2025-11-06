@@ -17,7 +17,7 @@ params.method = "CMM_vargrid";
 
 start_from_existing = 1;
 % Check if data already exists
-params.data_dir = "../data/keen_waves_"+drive+"_method_" +params.method;
+params.data_dir = "../data/keen_waves_"+drive+"_method_" +params.method+"1";
 data_file = params.data_dir+"/data_Tend"+num2str(params.Tend)+".mat";
 
 if exist(data_file, 'file') && start_from_existing
@@ -112,6 +112,12 @@ else
 v_zoom_range = [0.375, 2.25];
 myclim = [-0.215,0.20];
 end
+
+if  ~ isfield(params.grids(1), 'map') && params.method=="CMM_vargrid"
+    params.grids(1).map = params.grids(1);
+end
+
+dom = params.grids(1).dom;
 v_zoom = linspace(v_zoom_range(1), v_zoom_range(2), 1048);
 x_zoom = linspace(dom(1), dom(3), 1048);
 [X_zoom, V_zoom] = meshgrid(x_zoom, v_zoom);
@@ -151,22 +157,80 @@ rho_modes(:,2) = data_table.rho_2;
 rho_modes(:,3) = data_table.rho_3;
 rho_modes(:,4) = data_table.rho_4;
 rho_modes(:,5) = data_table.rho_5;
-plot(time(1:1:end), rho_modes(1:1:end,:),"LineWidth",1);
-title('Density Modes - Drive Frequency Component');
+
+% Load reference data
+reference_dir = fullfile('KEEN_reference_data');
+reference_modes = cell(5, 1);
+reference_time = cell(5, 1);
+
+for k = 1:5
+    ref_file = fullfile(reference_dir, sprintf('mode%d.csv', k));
+    if exist(ref_file, 'file')
+        ref_data = readtable(ref_file);
+        reference_time{k} = ref_data.x;
+        reference_modes{k} = ref_data.y;
+        fprintf('Loaded reference data for mode %d\n', k);
+    else
+        fprintf('Warning: Reference file %s not found\n', ref_file);
+        reference_time{k} = [];
+        reference_modes{k} = [];
+    end
+end
+
+% Calculate rescaling factor based on mode 1 maximum values
+if ~isempty(reference_modes{1}) && ~isempty(rho_modes(:,1))
+    sim_max_mode1 = max(abs(rho_modes(:,1)));
+    ref_max_mode1 = max(abs(reference_modes{1}));
+    rescaling_factor = sim_max_mode1 / ref_max_mode1;
+    fprintf('Rescaling factor (sim_max/ref_max): %.6f\n', rescaling_factor);
+    
+    % Apply rescaling to all reference modes
+    for k = 1:5
+        if ~isempty(reference_modes{k})
+            reference_modes{k} = reference_modes{k} * rescaling_factor;
+        end
+    end
+else
+    fprintf('Warning: Cannot calculate rescaling factor - missing data\n');
+    rescaling_factor = 1;
+end
+
+% Plot simulation and reference data in the same loop
+markers = {'o', 's', '^', 'd', 'v'};
+colors = {'red', 'green', 'blue', 'magenta', 'black'};
+hold on;
+
+for k = 1:5
+    % Plot simulation data
+    plot(time(1:1:end), rho_modes(1:1:end,k), "LineWidth", 1, ...
+         'DisplayName', sprintf('$k=%d$ (CMM-NuFi)', k), 'Color', colors{k});
+    
+    % Plot reference data with same color
+    if ~isempty(reference_modes{k})
+        plot(reference_time{k}, reference_modes{k}, ':', 'Marker', markers{k}, ...
+             'MarkerSize', 1, 'LineWidth', 1, 'Color', colors{k}, ...
+             'DisplayName', sprintf('$k=%d$ (Afeyan)', k));
+    end
+end
+
+%title('Density Modes - Drive Frequency Component (Simulation vs Reference)');
 xlabel('Time $t$', 'Interpreter', 'latex');
-ylabel('$|\hat{\rho}(k, t)|$', 'Interpreter', 'latex');
+ylabel('Fourier mode $\hat{\rho}(k, t)$', 'Interpreter', 'latex');
 grid on;
 set(gca, 'FontSize', 14);
 xlim([0,time(end)])
-legend("$k=1$","$k=2$","$k=3$","$k=4$","$k=5$")
+legend('Location', 'best');
+hold off;
+
 % Save the plot
-save_fig_tikz(fig_name + "_density_modes");
+save_fig_tikz(fig_name + "_density_modes_comparison");
 
 
 %% Make a video of zooming into the fine structures with focus point (xstar, vstar)
 
 xstar = params.Lx/2;
 vstar = sum(abs(v_zoom_range))/2;
+Nsample = 512;
 
 % Create output directory
 output_dir = sprintf("../images/%s_zoom_sequence", params.mycase);
@@ -181,7 +245,7 @@ zoom_start = 0.7;  % Starting zoom factor (smaller = more zoomed out)
 zoom_end = 1.0;    % Ending zoom factor (1.0 = original zoom level)
 
 % Create zoom factors (exponential progression for smooth zoom)
-zoom_factors = linspace(zoom_start, zoom_end, num_frames);
+zoom_factors = [1,linspace(zoom_start, zoom_end, num_frames)];
 
 % Define the focus point for zooming
 xstar = params.Lx/2;
@@ -204,8 +268,8 @@ for i = 1:num_frames
     x_zoom_max = xstar + zoom_height/2;
     
     % Create zoomed grid
-    v_zoom_current = linspace(v_zoom_min, v_zoom_max, 256);
-    x_zoom_current = linspace(x_zoom_min, x_zoom_max, 256);
+    v_zoom_current = linspace(v_zoom_min, v_zoom_max, Nsample);
+    x_zoom_current = linspace(x_zoom_min, x_zoom_max, Nsample);
     [X_zoom_current, V_zoom_current] = meshgrid(x_zoom_current, v_zoom_current);
     
     % Get zoomed data

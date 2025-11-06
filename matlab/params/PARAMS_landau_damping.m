@@ -10,8 +10,8 @@ params.Tend         = 100;                 % Simulation end time
 params.dt_save      = 10;                 % Save data every dt_save time units
 params.N_remap = 20;
 %% Grid Parameters
-params.Nx           = 2^8;                % Number of spatial grid points
-params.Nv           = 2^8;                % Number of velocity grid points
+params.Nsample = [2^8, 2^8];                % number of grid points in the sample grid
+params.Nmap = [2^5, 2^5];                   % number of grid points saved in the map grid
 params.k            = 0.5;                % Wave number
 params.Lx           = 2 * pi / params.k;  % Length of spatial domain
 params.Lv           = 12;                 % Velocity domain length (default)
@@ -30,3 +30,10 @@ params.alpha        = 0.01;                % Perturbation amplitude
 params.f0 = @(x,v) (1 + params.alpha * cos(x * params.k)) ...
                 ./ sqrt(2 * pi) .* exp(-(v).^2 / 2);
 params.fini = {params.f0};                % Initial distribution function
+
+% Interpolation parameters
+opts.scheme = 'lagrange-bary';
+%opts.scheme = 'bspline';
+opts.order = 3;
+opts.use_mex = true;
+params.opt_interp = opts;

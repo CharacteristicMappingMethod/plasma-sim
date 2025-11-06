@@ -1,8 +1,14 @@
 function [Efield] = vPoisson(fs, grids, charge)
 
 % compute charge density
-rho = 0;
+
 Ns = length(grids);
+if Ns ==1
+
+    rho = 1;
+else
+    rho = 0;
+end
 for s = 1:Ns
     rho = rho + charge(s)*compute_density(fs(:,:,s),grids(s).dv);
 end
