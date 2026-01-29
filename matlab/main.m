@@ -12,6 +12,7 @@ PARAMS_two_stream;
 %PARAMS_landau_damping;
 %PARAMS_ion_acoustic_waves;
 %PARAMS_keen_waves_canonical;
+PARAMS_keen_waves_weak;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% simulate
 tic()

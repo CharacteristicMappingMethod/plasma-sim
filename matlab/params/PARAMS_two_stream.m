@@ -1,6 +1,6 @@
 params = struct();
 params.mycase = "two_stream";          % "two_stream"
-params.Nsample = [2^8, 2^8];                % number of grid points in the sample grid
+params.Nsample = [2^10, 2^10];                % number of grid points in the sample grid
 params.Nmap = [2^6, 2^6];                   % number of grid points saved in the map grid
 params.Ns = 1;                              % Number of species (electrons and ions)
 params.N_remap = 20;                        % remapping interval (if threshold is not set)
@@ -13,7 +13,7 @@ params.Mass = [1];               % Mass of species
 params.charge = [-1];                    % Charge of species
 params.Nt_max = 4000;                       % Maximum number of time steps
 params.dt = 1/5;                            % Time step size
-params.dt_save = 10;                        % Save after dt_save time
+params.dt_save = 1;                        % Save after dt_save time
 params.Tend = 40;                           % End time of simulation
 params.plot_freq = 10;                      % Nr. of iterations between plotting (if 0 no plotting)
 params.measure_freq = 1;                    % Nr. of iterations between measurements (if 0 no measurements)

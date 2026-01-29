@@ -18,8 +18,8 @@ Lv = 12;    % Velocity domain [-6, 6] -> [0, 12] after shift
 v_shift = 6; % Shift to make velocity domain [0, 12]
 
 % Test parameters
-resolutions = [1024, 32, 64, 128, 256, 512];
-max_compositions = 20;
+resolutions = [512, 32, 64, 128, 256];
+max_compositions = 10;
 amplitude = 0.1; % Small amplitude for the map
 
 % Colors for plotting
@@ -39,6 +39,10 @@ results.resolutions = resolutions;
 results.max_errors = zeros(length(resolutions), max_compositions);
 results.mean_errors = zeros(length(resolutions), max_compositions);
 
+opts.scheme = 'bspline';
+opts.order = 3;
+opt.use_mex = true;
+
 % Test each resolution
 for res_idx = 1:length(resolutions)
     resolution = resolutions(res_idx);
@@ -54,6 +58,8 @@ for res_idx = 1:length(resolutions)
     params = struct();
     params.Lx = Lx;
     params.Lv = Lv;
+    params.opt_interp = opts;
+
     V = grid.V;
     X = grid.X;
     % Create maps for composition
@@ -68,7 +74,7 @@ for res_idx = 1:length(resolutions)
         for n_maps = 1:max_compositions
             % Compose n_maps maps
             Maps_subset = Maps(:,:,:,1:n_maps);
-        
+            params.Nmaps = n_maps;
             Map_composed = compose_maps_numerical(Maps_subset, grid, params);
              
             if res_idx ==1 
@@ -77,6 +83,7 @@ for res_idx = 1:length(resolutions)
                 V_ref = V;
                 grid_ref = grid;
             end
+            params.Nmaps = 1;
            [X_star, V_star] = evaluate_map(Map_composed, grid, params, X_ref, V_ref);
           
              results.l2_errors(res_idx, n_maps) = norm(X_star - Map_composed_ref(:,:,1, n_maps), 'fro') + norm(V_star - Map_composed_ref(:,:,2,n_maps), 'fro');
@@ -136,7 +143,7 @@ for n_maps = [1, max_compositions]
     legend_entries{nl} = sprintf("%d maps", n_maps);
 end
 
-loglog(sort(resolutions),1e8*(1./sort(resolutions)).^(4),'k--')
+loglog(sort(resolutions),1e7*(1./sort(resolutions)).^(4),'k--')
 legend_entries{end+1}="$\mathcal{O}(N^-4)$";
 xlabel('1/N');
 ylabel('l2 error');

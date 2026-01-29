@@ -44,8 +44,8 @@ for i = N_maps:-1:1
     
     %  Use correct coordinates to call interpolation function
     twopi = 2*pi;
-    Interpolated_Delta_X = interp2d_periodic(Query_X/params.Lx*twopi, Query_V_shifted/params.Lv*pi, x/params.Lx*twopi, v_shifted/params.Lv*pi, Delta_X); % all coordinates must be rescaled to [0,2pi]
-    Interpolated_Delta_V = interp2d_periodic(Query_X/params.Lx*twopi, Query_V_shifted/params.Lv*pi, x/params.Lx*twopi, v_shifted/params.Lv*pi, Delta_V);
+    Interpolated_Delta_X = interp2d_periodic(Query_X/params.Lx*twopi, Query_V_shifted/params.Lv*pi, x/params.Lx*twopi, v_shifted/params.Lv*pi, Delta_X, params.opt_interp); % all coordinates must be rescaled to [0,2pi]
+    Interpolated_Delta_V = interp2d_periodic(Query_X/params.Lx*twopi, Query_V_shifted/params.Lv*pi, x/params.Lx*twopi, v_shifted/params.Lv*pi, Delta_V, params.opt_interp);
     
     % Reshape interpolated results
     Interpolated_Delta_X = reshape(Interpolated_Delta_X, size(Query_X));

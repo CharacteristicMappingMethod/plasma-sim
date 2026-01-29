@@ -36,7 +36,7 @@
 close all
 clear all
 clc
-addpath(genpath('./src/'),genpath('./params/'))
+addpath(genpath('../src/'),genpath('../params/'))
 DEFAULTS
 
 %% Test Case Selection
@@ -68,7 +68,7 @@ else
     test_case_name = 'two_stream';
     test_case_display = 'Two-Stream Instability';
     params_script = 'PARAMS_two_stream';
-    target_time = 50.0;  % Two-stream typically needs longer time
+    target_time = 100.0;  % Two-stream typically needs longer time
     plot_filename = sprintf('conservation_three_methods_two_stream_Tend%.0f', target_time);
 end
 
@@ -78,17 +78,21 @@ fprintf('Methods: CMM, CMM-vargrid, NuFi, Predictor-Corrector\n');
 fprintf('Time range: 0 to %.1f\n\n', target_time);
 
 % Analysis parameters
-methods = {"CMM", "CMM_vargrid", "NuFi", "predcorr"};
-method_names = {"CMM-NuFi", "CMM-vargrid", "NuFi", "Pred.-Corr."};
-colors = {'red', 'magenta', 'blue', 'green'};
+methods = {"CMM", "CMM_vargrid", "NuFi", "predcorr", "CMM_old"};
+method_names = {"CMM-NuFi", "CMM-vargrid", "NuFi", "Pred.-Corr.", "CMM"};
 
+colors = {'red', 'magenta', 'blue', 'green', 'black'};
+
+
+%CMM_old_csv_file = '/home/pkrah/develop/CMM_VP_Matlab/data/two_stream_Map1024_Fine1024_Nt500/diagnostics.csv';
+CMM_old_csv_file = '/home/pkrah/develop/CMM_VP_Matlab/data/landau_damping_Map256_Fine256_Nt500/diagnostics.csv';
 % Data point spacing for plotting (downsample data points)
 delta_idx = 2;
 
 %% Read data directly from CSV files
-results = cell(4, 1);
+results = cell(length(methods), 1);
 
-for method_idx = 1:4
+for method_idx = 1:length(methods)
     method = methods{method_idx};
     method_name = method_names{method_idx};
     
@@ -96,12 +100,16 @@ for method_idx = 1:4
     
     % Construct data directory path based on test case and method
     % Pattern: ./data/{test_case_name}_Tend{Tend}_{method}/
-    data_dir = sprintf('./data/%s_Tend%.0f_%s/', test_case_name, target_time, method);
+    data_dir = sprintf('../data/%s_Tend%.0f_%s/', test_case_name, target_time, method);
     data_dir_standard = data_dir;  % Keep standard path for new simulations
     
     % Read CSV file
-    species_name = "electrons";  % Default species name for single-species cases
-    csv_file = fullfile(data_dir, species_name + ".csv");
+    if strcmp(method, "CMM_old")
+        csv_file = CMM_old_csv_file;
+    else
+        species_name = "electrons";  % Default species name for single-species cases
+        csv_file = fullfile(data_dir, species_name + ".csv");
+    end 
     
     if exist(csv_file, 'file')
         fprintf('  Found CSV file: %s\n', csv_file);
@@ -202,11 +210,12 @@ set(fig, 'PaperUnits', 'inches', 'PaperSize', [10, 10]);
 colors = [0.8500, 0.3250, 0.0980;    % Red-orange (CMM)
           0.9290, 0.6940, 0.1250;    % Yellow-orange (CMM_vargrid)
           0.0000, 0.4470, 0.7410;    % Blue (NuFi)
-          0.4940, 0.1840, 0.5560];   % Purple (Pred-corr)
+          0.4940, 0.1840, 0.5560;
+          0, 0, 0];   % Purple (Pred-corr)
           
-line_styles = {'-', '--', ':', '-.'};  % Distinct line styles (solid, dashed, dotted, dash-dot)
-line_widths = [1.5, 1.5, 1.5, 1.5];
-marker_styles = {'none', 'x', '+', 'o'};
+line_styles = {'-', '--', ':', '-.','-'};  % Distinct line styles (solid, dashed, dotted, dash-dot)
+line_widths = [1.5, 1.5, 1.5, 1.5, 1.5];
+marker_styles = {'none', 'none', 'none', 'none','none'};
 
 % Set publication font properties with larger sizes
 set(0, 'DefaultAxesFontName', 'Times New Roman');
@@ -219,7 +228,7 @@ subplot(4, 1, 1);
 hold on;
 h_mass = [];
 all_mass_errors = [];
-for method_idx = 1:4
+for method_idx = 1:length(methods)
     if ~isempty(results{method_idx})
         time_array = results{method_idx}.time_array;
         mass_error = results{method_idx}.relative_mass_error;
@@ -245,7 +254,6 @@ for method_idx = 1:4
         h = plot(time_array_plot, mass_error_plot, ...
                  'Color', colors(method_idx, :), ...
                  'LineStyle', line_styles{method_idx}, ...
-                 'LineWidth', line_widths(method_idx), ...
                  'Marker', marker_styles{method_idx}, ...
                  'DisplayName', method_names{method_idx});
         h_mass = [h_mass, h];
@@ -265,7 +273,7 @@ else
     ylim([1e-16, 1e-2]);  % Fallback if no data
 end
 ylabel('$|\Delta M|/M_0$', 'Interpreter', 'latex', 'FontSize', 16);
-title('(a) Mass', 'FontSize', 16, 'FontWeight', 'normal');
+%title('(a) Mass', 'FontSize', 16, 'FontWeight', 'normal');
 grid on;
 set(gca, 'GridAlpha', 0.3, 'MinorGridAlpha', 0.1);
 % No legend for mass subplot - will be placed on energy subplot
@@ -275,7 +283,7 @@ subplot(4, 1, 2);
 hold on;
 h_momentum = [];
 all_momentum_errors = [];
-for method_idx = 1:4
+for method_idx = 1:length(methods)
     if ~isempty(results{method_idx})
         time_array = results{method_idx}.time_array;
         % Handle backward compatibility for field names
@@ -308,7 +316,6 @@ for method_idx = 1:4
         h = plot(time_array_plot, momentum_error_plot, ...
                  'Color', colors(method_idx, :), ...
                  'LineStyle', line_styles{method_idx}, ...
-                 'LineWidth', line_widths(method_idx), ...
                  'Marker', marker_styles{method_idx}, ...
                  'DisplayName', method_names{method_idx});
         h_momentum = [h_momentum, h];
@@ -328,7 +335,7 @@ else
     ylim([1e-16, 1e-2]);  % Fallback if no data
 end
 ylabel('$|\Delta P|$', 'Interpreter', 'latex', 'FontSize', 16);
-title('(b) Momentum', 'FontSize', 16, 'FontWeight', 'normal');
+%title('(b) Momentum', 'FontSize', 16, 'FontWeight', 'normal');
 grid on;
 set(gca, 'GridAlpha', 0.3, 'MinorGridAlpha', 0.1);
 % No legend for momentum subplot
@@ -338,7 +345,7 @@ subplot(4, 1, 3);
 hold on;
 h_energy = [];
 all_energy_errors = [];
-for method_idx = 1:4
+for method_idx = 1:length(methods)
     if ~isempty(results{method_idx})
         time_array = results{method_idx}.time_array;
         energy_error = results{method_idx}.relative_energy_error;
@@ -364,7 +371,6 @@ for method_idx = 1:4
         h = plot(time_array_plot, energy_error_plot, ...
                  'Color', colors(method_idx, :), ...
                  'LineStyle', line_styles{method_idx}, ...
-                 'LineWidth', line_widths(method_idx), ...
                  'Marker', marker_styles{method_idx}, ...
                  'DisplayName', method_names{method_idx});
         h_energy = [h_energy, h];
@@ -384,7 +390,7 @@ else
     ylim([1e-16, 1e-2]);  % Fallback if no data
 end
 ylabel('$|\Delta E|/E_0$', 'Interpreter', 'latex', 'FontSize', 16);
-title('(c) Energy', 'FontSize', 16, 'FontWeight', 'normal');
+%title('(c) Energy', 'FontSize', 16, 'FontWeight', 'normal');
 grid on;
 set(gca, 'GridAlpha', 0.3, 'MinorGridAlpha', 0.1);
 % No legend for energy subplot - will be placed on L2norm subplot
@@ -394,7 +400,7 @@ subplot(4, 1, 4);
 hold on;
 h_l2norm = [];
 all_l2norm_errors = [];
-for method_idx = 1:4
+for method_idx = 1:length(methods)
     if ~isempty(results{method_idx})
         time_array = results{method_idx}.time_array;
         l2norm_error = results{method_idx}.relative_l2norm_error;
@@ -420,7 +426,6 @@ for method_idx = 1:4
         h = plot(time_array_plot, l2norm_error_plot, ...
                  'Color', colors(method_idx, :), ...
                  'LineStyle', line_styles{method_idx}, ...
-                 'LineWidth', line_widths(method_idx), ...
                  'Marker', marker_styles{method_idx}, ...
                  'DisplayName', method_names{method_idx});
         h_l2norm = [h_l2norm, h];
@@ -441,7 +446,7 @@ else
 end
 ylabel('$|\Delta \|f\|_2|/\|f_0\|_2$', 'Interpreter', 'latex', 'FontSize', 16);
 xlabel('Time t', 'FontSize', 16);
-title('(d) L2 Norm', 'FontSize', 16, 'FontWeight', 'normal');
+%title('(d) L2 Norm', 'FontSize', 16, 'FontWeight', 'normal');
 grid on;
 set(gca, 'GridAlpha', 0.3, 'MinorGridAlpha', 0.1);
 legend(h_l2norm, 'Location', 'southeast', 'FontSize', 14, 'Box', 'off');
@@ -479,7 +484,7 @@ fprintf('Figure should now be displayed on screen.\n');
 pause(0.5);
 
 % Save publication-quality plots using save_fig_tikz
-images_dir = './analysis/images';
+images_dir = '../images';
 
 % Create analysis/images directory if it doesn't exist
 if ~exist(images_dir, 'dir')
@@ -515,7 +520,7 @@ else
     fprintf('Publication formats: PNG (600 DPI), EPS\n');
 end
 
-for method_idx = 1:4
+for method_idx = 1:length(methods)
     if ~isempty(results{method_idx})
         method_results = results{method_idx};
         fprintf('\n%s:\n', method_names{method_idx});
@@ -601,10 +606,10 @@ function method_results = read_conservation_quantities_from_csv(csv_file, sim_pa
     
     % Combine initial conditions with CSV data using simulation reference values
     time_array = [0; time_array_csv];
-    total_mass = [M0_sim; total_mass_csv];  % Use simulation M0
-    total_momentum = [P0_sim; total_momentum_csv];  % Use simulation P0  
-    total_energy = [E0_sim; total_energy_csv];  % Use simulation E0
-    l2norm = [L2norm0_sim; l2norm_csv];  % Use simulation L2norm0
+    total_mass = [total_mass_csv(1); total_mass_csv];  % Use simulation M0
+    total_momentum = [total_momentum_csv(1); total_momentum_csv];  % Use simulation P0  
+    total_energy = [total_energy_csv(1); total_energy_csv];  % Use simulation E0
+    l2norm = [l2norm_csv(1); l2norm_csv];  % Use simulation L2norm0
     
     % Also store kinetic and potential energy (use computed t=0 values)
     kinetic_energy = [Ekin0; kinetic_energy_csv];

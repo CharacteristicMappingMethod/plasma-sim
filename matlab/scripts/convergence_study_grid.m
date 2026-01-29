@@ -8,7 +8,7 @@
 close all
 clear all
 clc
-addpath(genpath('./src/'),genpath('./params/'))
+addpath(genpath('../src/'),genpath('../params/'))
 DEFAULTS
 
 % Configuration

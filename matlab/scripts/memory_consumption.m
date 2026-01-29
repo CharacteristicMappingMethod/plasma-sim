@@ -17,8 +17,8 @@ N_vec = linspace(1,Nnufi_max);
 d = 2;
 
 % Parameter arrays to loop over (combinations of N_remap and N_mapgrid)
-N_remap_values = [5, 20, 100];
-N_mapgrid_values = [64, 64, 64];
+N_remap_values = [5, 20, 100, 20];
+N_mapgrid_values = [64, 64, 64,512];
 
 % Plot
 figure(4);

@@ -1,10 +1,12 @@
 params = struct();
 params.mycase = "keen_waves_weak";          % "keen_waves_weak"
-params.Nx = 2^9;                            % Number of spatial grid points
-params.Nv = 2^9;                            % Number of velocity grid points
+params.Nx = 2^7;                            % Number of spatial grid points
+params.Nv = 2^7;                            % Number of velocity grid points
 params.Ns = 1;                              % Number of species (electrons only)
+params.refine_factor=30;
+params.v_range=[1.2, 1.6]
 params.N_remap = 40;
-params.method="CMM";
+params.method="CMM_vargrid";
 %params.dt_adapt_tolerance = 0.1;            % realtive error allowed during time integration
 %params.dt_interv = [1/100, 1];
 params.species_name = ["electrons"]; % name of the different species

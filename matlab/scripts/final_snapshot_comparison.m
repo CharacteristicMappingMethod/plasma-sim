@@ -21,7 +21,7 @@ Nsample = [1024];
 Nmap = [64];
 
 methods = ["NuFi", "CMM", "predcorr"];
-Tend = 40;
+Tend = 100;
 
 fprintf('=== Final Snapshot Comparison ===\n');
 fprintf('Test case: %s\n', case_name);
@@ -45,7 +45,8 @@ for i_res = 1:length(Nsample)
         fprintf('Loading: Nx=%d, Method=%s\n', Nx, method);
         
         % Create data directory path for this simulation
-        data_dir = sprintf("../data/%s_zoom_study_N%d_N%d_%s", case_name, Nsample(1), Nmap(1), method);
+        %data_dir = sprintf("../data/%s_zoom_study_N%d_N%d_%s", case_name,  Nsample(1), Nmap(1), method);
+        data_dir = sprintf("../data/%s_Tend%d_%s", case_name, Tend, method);
         config_file = fullfile(data_dir, "config_data.mat");
         
         if exist(config_file, 'file')
@@ -151,7 +152,7 @@ predcorr_idx = find(methods == "predcorr");
 
 % We need to reload the full parameter structures for zoom function
 % Load NuFi parameters
-data_dir_nufi = sprintf("../data/%s_zoom_study_N%d_N%d_%s", case_name, Nsample(1), Nmap(1), "NuFi");
+data_dir_nufi = sprintf("../data/%s_Tend%d_%s", case_name, Tend, "NuFi");
 config_file_nufi = fullfile(data_dir_nufi, "config_data.mat");
 if exist(config_file_nufi, 'file')
     load(config_file_nufi, 'params');
@@ -164,7 +165,7 @@ else
 end
 
 % Load CMM parameters
-data_dir_cmm = sprintf("../data/%s_zoom_study_N%d_N%d_%s", case_name, Nsample(1), Nmap(1), "CMM");
+data_dir_cmm = sprintf("../data/%s_Tend%d_%s", case_name, Tend, "CMM");
 config_file_cmm = fullfile(data_dir_cmm, "config_data.mat");
 if exist(config_file_cmm, 'file')
     load(config_file_cmm, 'params');
@@ -182,7 +183,7 @@ zoom_end = 0.005;   % Ending zoom factor (smaller = more zoomed in)
 
 % Create zoom factors (exponential progression for smooth zoom)
 zoom_factors = logspace(log10(zoom_start), log10(zoom_end), num_frames);
-
+t
 % Create output directory for zoom images
 zoom_output_dir = "../images/zoom_" + case_name;
 if ~exist(zoom_output_dir, 'dir')
@@ -192,6 +193,142 @@ end
 
 fprintf('Creating %d zoom sequence images...\n', num_frames);
 
+%% Static 4x4 zoom comparison figure
+fprintf('\n=== Creating 4x4 zoom comparison figure ===\n');
+
+num_zoom_levels = 4;
+zoom_scales = [1.0, 0.25, 0.0625, 0.01];
+zoom_titles = ["Full domain", "Zoom 1", "Zoom 2", "Zoom 3"];
+N_zoom_plot = 512;
+
+domain_x = [dom_nufi(1), dom_nufi(3)];
+domain_v = [dom_nufi(2), dom_nufi(4)];
+
+zoom_windows = cell(1, num_zoom_levels);
+for idx = 1:num_zoom_levels
+    if idx == 1
+        zoom_windows{idx} = struct( ...
+            'x_min', domain_x(1), ...
+            'x_max', domain_x(2), ...
+            'v_min', domain_v(1), ...
+            'v_max', domain_v(2));
+        continue;
+    end
+    width_x = diff(domain_x) * zoom_scales(idx);
+    width_v = diff(domain_v) * zoom_scales(idx);
+
+    x_min = max(domain_x(1), xf - width_x / 2);
+    x_max = min(domain_x(2), xf + width_x / 2);
+    v_min = max(domain_v(1), vf - width_v / 2);
+    v_max = min(domain_v(2), vf + width_v / 2);
+
+    zoom_windows{idx} = struct( ...
+        'x_min', x_min, ...
+        'x_max', x_max, ...
+        'v_min', v_min, ...
+        'v_max', v_max);
+end
+
+current_grid = grid_info{i_res, predcorr_idx};
+x_coords = current_grid.x;
+v_coords = current_grid.v;
+f_predcorr = final_snapshots{i_res, predcorr_idx};
+
+nufi_zoom_data = cell(1, num_zoom_levels);
+cmm_zoom_data = cell(1, num_zoom_levels);
+predcorr_zoom_data = cell(1, num_zoom_levels);
+
+for idx = 1:num_zoom_levels
+    x_lin = linspace(zoom_windows{idx}.x_min, zoom_windows{idx}.x_max, N_zoom_plot);
+    v_lin = linspace(zoom_windows{idx}.v_min, zoom_windows{idx}.v_max, N_zoom_plot);
+    [Xz, Vz] = meshgrid(x_lin, v_lin);
+
+    try
+        nufi_zoom_data{idx} = zoom(params_nufi, Xz, Vz);
+    catch
+        nufi_zoom_data{idx} = nan(size(Xz));
+    end
+
+    try
+        cmm_zoom_data{idx} = zoom(params_cmm, Xz, Vz);
+    catch
+        cmm_zoom_data{idx} = nan(size(Xz));
+    end
+
+    predcorr_zoom_data{idx} = interp2(x_coords, v_coords, f_predcorr, Xz, Vz, 'linear');
+end
+
+fig_zoom_grid = figure('Position', [50, 50, 1900, 1200]);
+tiled = tiledlayout(fig_zoom_grid, 3, 4, 'TileSpacing', 'compact', 'Padding', 'compact');
+%colormap(tiled, turbo);
+
+method_names = ["PredCorr", "NuFi", "CMM"];
+method_data = {predcorr_zoom_data, nufi_zoom_data, cmm_zoom_data};
+
+% Calculate global min/max for each method across all zoom levels
+clim_per_method = cell(1, numel(method_names));
+for method_idx = 1:numel(method_names)
+    all_values = [];
+    for col_idx = 1:num_zoom_levels
+        data = method_data{method_idx}{col_idx};
+        if ~isempty(data) && ~all(isnan(data(:)))
+            all_values = [all_values; data(:)];
+        end
+    end
+    if ~isempty(all_values)
+        clim_per_method{method_idx} = [min(all_values), max(all_values)];
+    else
+        clim_per_method{method_idx} = [0, 1];
+    end
+end
+
+for method_idx = 1:numel(method_names)
+    for col_idx = 1:num_zoom_levels
+        tile_position = num_zoom_levels * (method_idx - 1) + col_idx;
+        ax = nexttile(tiled, tile_position);
+
+        x_vals = linspace(zoom_windows{col_idx}.x_min, zoom_windows{col_idx}.x_max, N_zoom_plot);
+        v_vals = linspace(zoom_windows{col_idx}.v_min, zoom_windows{col_idx}.v_max, N_zoom_plot);
+        imagesc(x_vals, v_vals, method_data{method_idx}{col_idx});
+        set(ax, 'YDir', 'normal');
+        clim(ax, clim_per_method{method_idx});
+
+        if method_idx == 1
+            title(ax, sprintf('\\textbf{%s}', zoom_titles(col_idx)), 'Interpreter', 'latex', 'FontSize', 16);
+        end
+
+        if col_idx == 1
+            ylabel(ax, sprintf('\\textbf{%s}', method_names(method_idx)), 'Interpreter', 'latex');
+        end
+
+        if method_idx < numel(method_names)
+            set(ax, 'XTick', []);
+        else
+            xlabel(ax, '$x$', 'Interpreter', 'latex');
+        end
+
+        % Draw zoom indicator rectangles for all methods
+        if col_idx < num_zoom_levels
+            hold(ax, 'on');
+            next_window = zoom_windows{col_idx + 1};
+            rectangle(ax, 'Position', [next_window.x_min, next_window.v_min, ...
+                next_window.x_max - next_window.x_min, next_window.v_max - next_window.v_min], ...
+                'EdgeColor', 'k', 'LineWidth', 2, 'LineStyle', '--');
+            hold(ax, 'off');
+        end
+
+        if col_idx == num_zoom_levels
+            colorbar(ax);
+        end
+    end
+end
+
+%sgtitle(tiled, sprintf('\\textbf{%s final snapshot zooms}', case_name), 'Interpreter', 'latex', 'FontSize', 20);
+
+zoom_grid_name = "../images/" + case_name + "_zoom_grid";
+exportgraphics(fig_zoom_grid, zoom_grid_name + ".png", 'Resolution', 500);
+
+%% ZOOM SEQUENCE
 % Create figure once and reuse it
 fig = figure('Position', [100, 100, 1600, 400]);
 
